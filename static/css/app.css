@@ -1,0 +1,206 @@
+/* JusGestor Hub — estilos base.
+   Referência visual: Figuras 4 a 12 do artigo (menu lateral escuro, conteúdo claro).
+   RNF06: uso em larguras de 360 a 1366 px sem controles sobrepostos. */
+
+:root {
+  --cor-fundo: #f4f7fb;
+  --cor-superficie: #ffffff;
+  --cor-borda: #dde4ee;
+  --cor-texto: #0f1d33;
+  --cor-texto-suave: #5b6b82;
+  --cor-primaria: #0f2a4a;
+  --cor-primaria-hover: #1a3d66;
+  --cor-destaque: #0ea5e9;
+  --cor-menu: #0b1b2e;
+  --cor-menu-texto: #c9d4e3;
+  --cor-menu-hover: #14294a;
+  --cor-sucesso-fundo: #e7f6ec;
+  --cor-sucesso-texto: #166534;
+  --cor-alerta-fundo: #fff4db;
+  --cor-alerta-texto: #8a5a00;
+  --cor-erro-fundo: #fdecec;
+  --cor-erro-texto: #a61b1b;
+  --cor-info-fundo: #e6f3fb;
+  --cor-info-texto: #0b5a83;
+  --raio: 8px;
+  --largura-menu: 232px;
+  --fonte: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--fonte);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--cor-texto);
+  background: var(--cor-fundo);
+}
+
+h1, h2, h3 { line-height: 1.25; margin: 0 0 .5rem; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.15rem; }
+p { margin: 0 0 .75rem; }
+a { color: var(--cor-primaria-hover); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.icone { width: 18px; height: 18px; flex-shrink: 0; }
+
+.texto-suave { color: var(--cor-texto-suave); }
+.texto-pequeno { font-size: .85rem; }
+
+/* ---------- Marca ---------- */
+.marca { display: flex; align-items: center; gap: .65rem; }
+.marca__logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: var(--raio);
+  background: var(--cor-destaque); color: #fff;
+}
+.marca__logo .icone { width: 20px; height: 20px; }
+.marca__nome { display: block; color: #fff; font-size: .95rem; }
+.marca__sub { display: block; color: var(--cor-menu-texto); font-size: .75rem; }
+.marca--clara .marca__nome { color: var(--cor-texto); }
+.marca--clara .marca__sub { color: var(--cor-texto-suave); }
+
+/* ---------- Layout com menu ---------- */
+.menu-lateral {
+  position: fixed; inset: 0 auto 0 0; width: var(--largura-menu);
+  display: flex; flex-direction: column;
+  background: var(--cor-menu); color: var(--cor-menu-texto);
+  padding: 1rem .75rem; z-index: 30; overflow-y: auto;
+}
+.menu-lateral > .marca { padding: .25rem .5rem 1rem; border-bottom: 1px solid #1d3352; margin-bottom: .75rem; }
+
+.navegacao { display: flex; flex-direction: column; gap: 2px; }
+.navegacao__item {
+  display: flex; align-items: center; gap: .65rem;
+  padding: .5rem .65rem; border-radius: 6px;
+  color: var(--cor-menu-texto); text-decoration: none; font-size: .9rem;
+}
+a.navegacao__item:hover { background: var(--cor-menu-hover); color: #fff; }
+.navegacao__item--ativo { background: var(--cor-destaque); color: #fff; }
+a.navegacao__item--ativo:hover { background: var(--cor-destaque); }
+.navegacao__item--indisponivel { opacity: .45; cursor: not-allowed; }
+
+.menu-lateral__rodape { margin-top: auto; padding-top: 1rem; border-top: 1px solid #1d3352; }
+.usuario-atual { padding: 0 .5rem .6rem; }
+.usuario-atual strong { display: block; color: #fff; font-size: .88rem; overflow-wrap: anywhere; }
+.usuario-atual small { color: var(--cor-menu-texto); font-size: .78rem; }
+
+.conteudo { margin-left: var(--largura-menu); padding: 2rem 2.5rem; max-width: 1200px; }
+
+.barra-topo { display: none; }
+.fundo-menu { display: none; }
+
+/* ---------- Componentes ---------- */
+.cabecalho-pagina {
+  display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1.5rem;
+}
+.subtitulo { color: var(--cor-texto-suave); font-size: .9rem; margin: 0; }
+
+.cartao {
+  background: var(--cor-superficie); border: 1px solid var(--cor-borda);
+  border-radius: var(--raio); padding: 1.25rem 1.5rem;
+}
+
+.botao {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 40px; padding: .5rem 1rem; border-radius: 6px; border: 1px solid transparent;
+  font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer; text-decoration: none;
+}
+.botao--primario { background: var(--cor-primaria); color: #fff; }
+.botao--primario:hover { background: var(--cor-primaria-hover); }
+.botao--largo { width: 100%; }
+.botao--sair {
+  width: 100%; background: transparent; color: var(--cor-menu-texto); border-color: #1d3352;
+}
+.botao--sair:hover { background: var(--cor-menu-hover); color: #fff; }
+.botao-link {
+  background: none; border: 0; padding: 0; font: inherit; color: var(--cor-primaria-hover);
+  text-decoration: underline; cursor: pointer;
+}
+.botao-icone {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border: 0; border-radius: 6px;
+  background: transparent; color: inherit; cursor: pointer;
+}
+.botao-icone .icone { width: 22px; height: 22px; }
+
+:focus-visible { outline: 2px solid var(--cor-destaque); outline-offset: 2px; }
+
+/* ---------- Formulários (RNF01) ---------- */
+.campo { margin-bottom: 1rem; }
+.campo label { display: block; font-weight: 600; font-size: .88rem; margin-bottom: .3rem; }
+.obrigatorio { color: var(--cor-erro-texto); }
+.campo input, .campo select, .campo textarea {
+  width: 100%; min-height: 40px; padding: .5rem .7rem;
+  border: 1px solid var(--cor-borda); border-radius: 6px;
+  font: inherit; color: var(--cor-texto); background: #fff;
+}
+.campo input:focus, .campo select:focus, .campo textarea:focus {
+  outline: none; border-color: var(--cor-destaque); box-shadow: 0 0 0 3px rgba(14, 165, 233, .2);
+}
+.campo--erro input, .campo--erro select, .campo--erro textarea { border-color: var(--cor-erro-texto); }
+.campo__mensagem { color: var(--cor-erro-texto); font-size: .85rem; margin: .3rem 0 0; }
+.campo__ajuda { color: var(--cor-texto-suave); font-size: .8rem; margin-top: .3rem; }
+.campo__ajuda ul { margin: .25rem 0 0; padding-left: 1.1rem; }
+
+/* ---------- Avisos ---------- */
+.mensagens { margin-bottom: 1rem; }
+.aviso { padding: .7rem .9rem; border-radius: 6px; font-size: .9rem; margin: 0 0 .75rem; }
+.aviso p { margin: 0; }
+.aviso--success { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso-texto); }
+.aviso--warning { background: var(--cor-alerta-fundo); color: var(--cor-alerta-texto); }
+.aviso--error { background: var(--cor-erro-fundo); color: var(--cor-erro-texto); }
+.aviso--info { background: var(--cor-info-fundo); color: var(--cor-info-texto); }
+
+/* ---------- Páginas centralizadas (login, troca de senha, erros) ---------- */
+.pagina-centralizada {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.caixa-acesso {
+  width: 100%; max-width: 400px; background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda); border-radius: 12px; padding: 2rem 1.75rem;
+  box-shadow: 0 8px 30px rgba(15, 29, 51, .06);
+}
+.caixa-acesso > .marca { margin-bottom: 1.5rem; }
+.caixa-acesso h1 { margin-bottom: 1rem; }
+.acoes-secundarias {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem; margin-top: 1rem;
+}
+
+/* ---------- Telas estreitas ---------- */
+@media (max-width: 900px) {
+  .barra-topo {
+    display: flex; align-items: center; gap: .5rem;
+    position: sticky; top: 0; z-index: 20; height: 56px; padding: 0 .5rem;
+    background: var(--cor-menu); color: #fff;
+  }
+  .barra-topo__marca { font-weight: 600; }
+
+  .menu-lateral { transform: translateX(-100%); transition: transform .2s ease; }
+  .menu-aberto .menu-lateral { transform: none; }
+  .menu-aberto .fundo-menu {
+    display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, .4);
+  }
+
+  .conteudo { margin-left: 0; padding: 1.25rem 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-lateral { transition: none; }
+}
+
+@media print {
+  .menu-lateral, .barra-topo, .fundo-menu { display: none !important; }
+  .conteudo { margin: 0; padding: 0; }
+  body { background: #fff; }
+}

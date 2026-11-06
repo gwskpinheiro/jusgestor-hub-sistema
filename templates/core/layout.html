@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load interface %}
+
+{% block classe_body %}com-menu{% endblock %}
+
+{% block corpo %}
+<header class="barra-topo">
+  <button type="button" class="botao-icone" data-alternar-menu aria-controls="menu-lateral" aria-expanded="false">
+    {% icone "menu" %}<span class="sr-only">Abrir menu</span>
+  </button>
+  <span class="barra-topo__marca">JusGestor Hub</span>
+</header>
+
+<aside class="menu-lateral" id="menu-lateral">
+  <div class="marca">
+    <span class="marca__logo">{% icone "marca" %}</span>
+    <span>
+      <strong class="marca__nome">JusGestor Hub</strong>
+      <small class="marca__sub">Gestão jurídica integrada</small>
+    </span>
+  </div>
+
+  <nav class="navegacao" aria-label="Navegação principal">
+    {% for item in menu_itens %}
+      {% if item.href %}
+        <a class="navegacao__item{% if item.ativo %} navegacao__item--ativo{% endif %}" href="{{ item.href }}"{% if item.ativo %} aria-current="page"{% endif %}>
+          {% icone item.icone %}<span>{{ item.rotulo }}</span>
+        </a>
+      {% else %}
+        <span class="navegacao__item navegacao__item--indisponivel" aria-disabled="true" title="Disponível em fase futura">
+          {% icone item.icone %}<span>{{ item.rotulo }}</span>
+        </span>
+      {% endif %}
+    {% endfor %}
+  </nav>
+
+  <div class="menu-lateral__rodape">
+    <div class="usuario-atual">
+      <strong>{{ user.nome }}</strong>
+      <small>{{ user.get_perfil_display }}</small>
+    </div>
+    <form method="post" action="{% url 'usuarios:logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="botao botao--sair">{% icone "sair" %}<span>Sair</span></button>
+    </form>
+  </div>
+</aside>
+<div class="fundo-menu" data-alternar-menu hidden></div>
+
+<main class="conteudo" id="conteudo">
+  {% include "core/_mensagens.html" %}
+  {% block conteudo %}{% endblock %}
+</main>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load interface %}
+
+{% block titulo %}Entrar{% endblock %}
+{% block classe_body %}pagina-centralizada{% endblock %}
+
+{% block corpo %}
+<main class="caixa-acesso">
+  <div class="marca marca--clara">
+    <span class="marca__logo">{% icone "marca" %}</span>
+    <span>
+      <strong class="marca__nome">JusGestor Hub</strong>
+      <small class="marca__sub">Gestão jurídica integrada</small>
+    </span>
+  </div>
+
+  <h1>Entrar</h1>
+  {% include "core/_mensagens.html" %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="aviso aviso--error" role="alert">
+        {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
+      </div>
+    {% endif %}
+    {% include "core/_campo.html" with campo=form.username %}
+    {% include "core/_campo.html" with campo=form.password %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="botao botao--primario botao--largo">Entrar</button>
+  </form>
+  <p class="texto-suave texto-pequeno">Campos marcados com * são obrigatórios. Esqueceu a senha? Procure o administrador do escritório.</p>
+</main>
+{% endblock %}

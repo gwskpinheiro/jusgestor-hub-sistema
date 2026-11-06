@@ -1,0 +1,22 @@
+{% extends "core/layout.html" %}
+
+{% block titulo %}Painel{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>Painel</h1>
+    <p class="subtitulo">Visão geral do escritório</p>
+  </div>
+</div>
+
+<section class="cartao">
+  <h2>Olá, {{ user.nome }}</h2>
+  <p>Você está conectado com o perfil <strong>{{ user.get_perfil_display }}</strong>.</p>
+  <p class="texto-suave">
+    Os módulos de processos, clientes, agenda, documentos, horas, financeiro, relatórios
+    e usuários serão disponibilizados nas próximas etapas. Os itens do menu aparecem
+    conforme o seu perfil.
+  </p>
+</section>
+{% endblock %}

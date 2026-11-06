@@ -1,0 +1,39 @@
+name: jusgestor-hub
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Sem "ports": o banco só é acessível pela rede interna do Compose (RNF03).
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Publicado apenas na interface local da máquina, sem exposição pública (RNF03).
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - .:/app
+      - documentos:/data/documentos
+
+volumes:
+  pgdata:
+  documentos:

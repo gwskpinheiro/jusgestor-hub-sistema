@@ -1,0 +1,22 @@
+# Credenciais e configuração local (RNF02)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Django
+staticfiles/
+media/
+*.sqlite3
+
+# Backups locais (RNF07) — devem ficar em cópia independente, fora do repositório
+backups/
+
+# Editores / SO
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
