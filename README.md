@@ -67,6 +67,23 @@ JavaScript e Docker Compose.
 A porta só é publicada em `127.0.0.1` e o banco não é exposto fora da rede do
 Compose (RNF03).
 
+## Bancos de dados
+
+A variável `DB_ALVO` do `.env` escolhe o banco:
+
+- `local` (padrão): PostgreSQL do Docker, para desenvolvimento e testes.
+- `supabase`: PostgreSQL do Supabase (Session Pooler, SSL obrigatório), para
+  o sistema publicado.
+
+Os testes automatizados só rodam com `local`; com outro valor, o executor de
+testes interrompe a execução antes de conectar. Para preencher e testar a
+conexão com o Supabase, veja [docs/supabase.md](docs/supabase.md).
+
+```powershell
+docker compose run --rm web python manage.py verificar_banco                      # banco local
+docker compose run --rm -e DB_ALVO=supabase web python manage.py verificar_banco  # Supabase (somente leitura)
+```
+
 ## Testes
 
 ```powershell
@@ -91,13 +108,14 @@ depois de fazer uma cópia de segurança.
 ## Estrutura
 
 ```
-config/              configurações, URLs e WSGI
+config/              configurações, URLs, WSGI, seleção do banco (banco.py) e executor de testes
 apps/core/           layout, painel, menu por perfil, verificações de perfil
 apps/usuarios/       modelo de usuário, autenticação, bloqueio, troca de senha
 templates/           páginas HTML (templates Django)
 static/css, static/js
 docs/referencias/    artigo do TCC (não modificar)
 docs/alteracoes-modelo.md  diferenças em relação ao modelo relacional do artigo
+docs/supabase.md     conexão com o PostgreSQL do Supabase
 ```
 
 ## Perfis e permissões

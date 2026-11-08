@@ -8,6 +8,8 @@ from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 
+from config.banco import alvo_do_banco, configurar_banco
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -64,17 +66,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", obrigatorio=True),
-        "USER": env("POSTGRES_USER", obrigatorio=True),
-        "PASSWORD": env("POSTGRES_PASSWORD", obrigatorio=True),
-        "HOST": env("POSTGRES_HOST", "db"),
-        "PORT": env("POSTGRES_PORT", "5432"),
-        "CONN_MAX_AGE": 60,
-    }
-}
+# Banco escolhido por DB_ALVO: "local" (Docker, padrão) ou "supabase"
+# (Session Pooler com SSL). Detalhes em config/banco.py e docs/supabase.md.
+BANCO_ALVO = alvo_do_banco(os.environ)
+DATABASES = {"default": configurar_banco(os.environ)}
+
+# Os testes só rodam no PostgreSQL local; o executor recusa o Supabase.
+TEST_RUNNER = "config.test_runner.RunnerBancoIsolado"
 
 # ---------------------------------------------------------------------------
 # Autenticação (RF01, RN06, RN07, RNF02)

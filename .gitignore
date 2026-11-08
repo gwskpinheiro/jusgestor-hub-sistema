@@ -1,5 +1,8 @@
 # Credenciais e configuração local (RNF02)
 .env
+.env.*
+!.env.example
+certs/
 
 # Python
 __pycache__/
