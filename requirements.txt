@@ -2,3 +2,8 @@ Django==5.2.19
 psycopg[binary]==3.3.8
 asgiref==3.13.0
 sqlparse==0.6.1
+
+# Produção (Render)
+gunicorn==23.0.0
+packaging==26.3
+whitenoise==6.12.0

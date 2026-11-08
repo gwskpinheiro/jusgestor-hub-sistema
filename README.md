@@ -84,6 +84,12 @@ docker compose run --rm web python manage.py verificar_banco                    
 docker compose run --rm -e DB_ALVO=supabase web python manage.py verificar_banco  # Supabase (somente leitura)
 ```
 
+## Produção (Render)
+
+Em produção, o sistema roda com Gunicorn e WhiteNoise no Render, usando o
+banco do Supabase. Os comandos de build e start, as variáveis de ambiente e
+as proteções estão em [docs/render.md](docs/render.md).
+
 ## Testes
 
 ```powershell
@@ -108,7 +114,9 @@ depois de fazer uma cópia de segurança.
 ## Estrutura
 
 ```
-config/              configurações, URLs, WSGI, seleção do banco (banco.py) e executor de testes
+config/              configurações, URLs, WSGI, seleção do banco (banco.py),
+                     produção/HTTPS (ambiente.py) e executor de testes
+gunicorn.conf.py     servidor de produção
 apps/core/           layout, painel, menu por perfil, verificações de perfil
 apps/usuarios/       modelo de usuário, autenticação, bloqueio, troca de senha
 templates/           páginas HTML (templates Django)
@@ -116,6 +124,7 @@ static/css, static/js
 docs/referencias/    artigo do TCC (não modificar)
 docs/alteracoes-modelo.md  diferenças em relação ao modelo relacional do artigo
 docs/supabase.md     conexão com o PostgreSQL do Supabase
+docs/render.md       hospedagem no Render
 ```
 
 ## Perfis e permissões

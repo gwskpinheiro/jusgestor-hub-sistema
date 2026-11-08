@@ -8,6 +8,7 @@ from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 
+from config import ambiente
 from config.banco import alvo_do_banco, configurar_banco
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,8 +22,10 @@ def env(nome, padrao=None, obrigatorio=False):
 
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", obrigatorio=True)
-DEBUG = env("DJANGO_DEBUG", "0") == "1"
-ALLOWED_HOSTS = [h.strip() for h in env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+# Padrão seguro: sem DJANGO_DEBUG=1, o sistema roda em modo de produção.
+DEBUG = ambiente.booleano(os.environ, "DJANGO_DEBUG")
+ALLOWED_HOSTS = ambiente.hosts_permitidos(os.environ)
+CSRF_TRUSTED_ORIGINS = ambiente.origens_csrf(os.environ)
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -36,6 +39,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Serve os arquivos estáticos em produção (Render), logo após o SecurityMiddleware.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -110,6 +115,18 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 
+# HTTPS (produção): ativado com DJANGO_HTTPS=1. Cookies seguros, redirecionamento
+# para HTTPS e HSTS. Ver config/ambiente.py.
+HTTPS = ambiente.booleano(os.environ, "DJANGO_HTTPS")
+globals().update(ambiente.config_https(os.environ))
+
+# HSTS sem subdomínios e sem preload: o domínio *.onrender.com não pertence ao
+# projeto. Escolha deliberada; ver docs/render.md.
+SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
+
+# No Render, recusa iniciar com DEBUG ligado, sem HTTPS ou fora do Supabase.
+ambiente.validar_producao(os.environ, DEBUG, HTTPS, BANCO_ALVO)
+
 # ---------------------------------------------------------------------------
 # Internacionalização
 # ---------------------------------------------------------------------------
@@ -125,6 +142,21 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Em produção, o WhiteNoise serve os arquivos gerados por "collectstatic",
+# comprimidos e com nomes versionados (cache de longo prazo). Em
+# desenvolvimento e nos testes (DEBUG=1), usa o armazenamento padrão, que não
+# exige executar collectstatic.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        )
+    },
+}
+
 # Documentos ficam fora de STATIC/MEDIA públicos e serão entregues apenas por
 # view com verificação de permissão (RN04, RF06) — implementado em fase futura.
 DOCUMENTOS_ROOT = Path(env("DOCUMENTOS_ROOT", "/data/documentos"))
@@ -135,5 +167,9 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
-    "loggers": {"apps": {"handlers": ["console"], "level": "INFO"}},
+    "loggers": {
+        "apps": {"handlers": ["console"], "level": "INFO"},
+        # Erros do Django (inclusive 500) nos logs do Render, também com DEBUG=0.
+        "django": {"handlers": ["console"], "level": "ERROR"},
+    },
 }
