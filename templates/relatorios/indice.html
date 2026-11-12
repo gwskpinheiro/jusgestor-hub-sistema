@@ -1,0 +1,23 @@
+{% extends "core/layout.html" %}
+
+{% block titulo %}Relatórios{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>Relatórios</h1>
+    <p class="subtitulo">Escolha o tipo de relatório</p>
+  </div>
+</div>
+
+<div class="grade-2">
+  {% for t in tipos %}
+    <section class="cartao">
+      <h2><a href="{% url 'relatorios:relatorio' t.chave %}">{{ t.titulo }}</a></h2>
+      <p class="texto-suave">{{ t.descricao }}</p>
+      <a class="botao botao--secundario botao--pequeno" href="{% url 'relatorios:relatorio' t.chave %}">Abrir</a>
+    </section>
+  {% endfor %}
+</div>
+<p class="texto-suave texto-pequeno">Os relatórios exibem apenas os dados autorizados ao seu perfil. Saída em HTML, exportação CSV e impressão em PDF pelo navegador.</p>
+{% endblock %}

@@ -1,0 +1,12 @@
+{# Gráfico de barras simples em HTML/CSS. Itens: rotulo, texto, pct, classe. #}
+{% if itens %}
+<div class="barras" role="list" aria-label="{{ titulo }}">
+  {% for item in itens %}
+  <div class="barra {{ item.classe|default:'' }}" role="listitem">
+    <span class="barra__rotulo" title="{{ item.rotulo }}">{{ item.rotulo }}</span>
+    <span class="barra__trilho" aria-hidden="true"><span class="barra__preenchimento" style="width: {{ item.pct }}%"></span></span>
+    <span class="barra__valor">{{ item.texto }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
