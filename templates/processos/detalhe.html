@@ -69,4 +69,22 @@
     <p class="texto-suave">Nenhum compromisso vinculado.</p>
   {% endif %}
 </section>
+
+{% if mostra_horas %}
+<section class="cartao">
+  <div class="cartao-cabecalho">
+    <h2>Horas trabalhadas{% if user.perfil == "ADV" %} (somente as suas){% endif %} · total {{ total_minutos|duracao }}</h2>
+    {% if not processo.arquivado %}<a href="{% url 'horas:novo' %}">Registrar horas</a>{% endif %}
+  </div>
+  {% if horas %}
+    <ul class="lista-simples">
+      {% for h in horas %}
+        <li><span>{{ h.atividade|truncatechars:80 }}<small>{{ h.data_atividade|date:"d/m/Y" }} · {{ h.usuario.nome }}</small></span><span>{{ h.minutos|duracao }}</span></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="texto-suave">Nenhuma hora registrada.</p>
+  {% endif %}
+</section>
+{% endif %}
 {% endblock %}

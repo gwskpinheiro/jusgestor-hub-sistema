@@ -79,12 +79,15 @@ class ProcessosTests(f.Cenario):
         self.assertEqual(self.proc.responsavel, self.adv)
 
     def test_somente_adm_arquiva_e_vinculos_permanecem(self):
+        h = f.registro_hora(self.adv, self.proc)
         self.entrar(self.adv)
         self.assertEqual(self.client.post(reverse("processos:arquivar", args=[self.proc.pk])).status_code, 403)
         self.entrar(self.adm)
         self.client.post(reverse("processos:arquivar", args=[self.proc.pk]))
         self.proc.refresh_from_db()
         self.assertTrue(self.proc.arquivado)
+        h.refresh_from_db()
+        self.assertEqual(h.processo, self.proc)
 
     def test_processo_arquivado_nao_e_editado(self):
         self.proc.arquivado = True

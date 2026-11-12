@@ -90,3 +90,15 @@ def documentos_visiveis(usuario):
         Q(processo__in=processos_visiveis(usuario))
         | Q(processo__isnull=True, cliente__in=clientes_visiveis(usuario))
     )
+
+
+def registros_hora_visiveis(usuario):
+    """ADM consulta as horas da equipe; ADV, apenas as próprias (RN05)."""
+    from apps.horas.models import RegistroHora
+
+    qs = RegistroHora.objects.all()
+    if e_adm(usuario):
+        return qs
+    if _ativo(usuario) and usuario.perfil == Perfil.ADV:
+        return qs.filter(usuario=usuario)
+    return qs.none()

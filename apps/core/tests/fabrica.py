@@ -1,7 +1,7 @@
 """Dados fictícios para os testes (RNF08). Nenhum dado real é usado."""
 import itertools
 import secrets
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.test import TestCase
 from django.utils import timezone
@@ -47,6 +47,14 @@ def compromisso(responsavel, processo_=None, participantes=(), **extra):
     for u in participantes:
         ParticipanteCompromisso.objects.create(compromisso=c, usuario=u)
     return c
+
+
+def registro_hora(u, processo_, minutos=60, **extra):
+    from apps.horas.models import RegistroHora
+
+    extra.setdefault("data_atividade", date.today())
+    extra.setdefault("atividade", "Atividade fictícia")
+    return RegistroHora.objects.create(usuario=u, processo=processo_, minutos=minutos, **extra)
 
 
 class Cenario(TestCase):

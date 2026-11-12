@@ -1,7 +1,7 @@
 """Gerenciar processos (RF02; RN01, RN07, RN08)."""
 from django.contrib import messages
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -12,6 +12,7 @@ from apps.core.acesso import (
     e_adm,
     pode_editar_processo,
     processos_visiveis,
+    registros_hora_visiveis,
 )
 from apps.core.permissoes import perfil_requerido
 from apps.core.utils import paginar
@@ -77,6 +78,11 @@ def detalhe(request, pk):
         "compromissos": compromissos_visiveis(usuario).filter(processo=processo)
         .select_related("responsavel").order_by("-inicio")[:10],
     }
+    if usuario.perfil in (Perfil.ADM, Perfil.ADV):
+        horas = registros_hora_visiveis(usuario).filter(processo=processo).select_related("usuario")
+        contexto["horas"] = horas.order_by("-data_atividade")[:10]
+        contexto["total_minutos"] = horas.aggregate(total=Sum("minutos"))["total"] or 0
+        contexto["mostra_horas"] = True
     return render(request, "processos/detalhe.html", contexto)
 
 
