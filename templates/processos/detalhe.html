@@ -1,0 +1,40 @@
+{% extends "core/layout.html" %}
+{% load formatos %}
+
+{% block titulo %}{{ processo.titulo }}{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>{{ processo.titulo }}</h1>
+    <p class="subtitulo">
+      {{ processo.numero|default:"Processo sem número" }}
+      <span class="selo selo--{{ processo.situacao }}">{{ processo.get_situacao_display }}</span>
+      {% if processo.arquivado %}<span class="selo selo--arquivado">Arquivado</span>{% endif %}
+    </p>
+  </div>
+  <div class="acoes">
+    {% if pode_editar %}<a class="botao botao--secundario" href="{% url 'processos:editar' processo.pk %}">Editar</a>{% endif %}
+    {% if user.perfil == "ADM" %}
+      <form method="post" action="{% url 'processos:arquivar' processo.pk %}"
+            data-confirmar="{% if processo.arquivado %}Reativar este processo?{% else %}Arquivar este processo? Documentos, horas e lançamentos continuam vinculados.{% endif %}">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="{% if processo.arquivado %}desarquivar{% else %}arquivar{% endif %}">
+        <button type="submit" class="botao botao--perigo">{% if processo.arquivado %}Reativar{% else %}Arquivar{% endif %}</button>
+      </form>
+    {% endif %}
+    <a class="botao botao--secundario" href="{% url 'processos:lista' %}">Voltar</a>
+  </div>
+</div>
+
+<section class="cartao">
+  <dl class="dados">
+    <div><dt>Cliente</dt><dd>{{ processo.cliente.nome }}</dd></div>
+    <div><dt>Advogado responsável</dt><dd>{{ processo.responsavel.nome }}</dd></div>
+    <div><dt>Cadastrado em</dt><dd>{{ processo.criado_em|date:"d/m/Y" }}</dd></div>
+    {% if not consulta_basica %}
+      <div class="largo"><dt>Descrição</dt><dd class="texto-livre">{{ processo.descricao|default:"—" }}</dd></div>
+    {% endif %}
+  </dl>
+</section>
+{% endblock %}

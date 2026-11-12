@@ -1,0 +1,7 @@
+from django.apps import AppConfig
+
+
+class ProcessosConfig(AppConfig):
+    name = "apps.processos"
+    label = "processos"
+    verbose_name = "Processos"

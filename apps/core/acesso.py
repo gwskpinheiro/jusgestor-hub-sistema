@@ -13,6 +13,8 @@ Regras (definidas pelo autor a partir do artigo):
 - Acesso ao cliente NÃO libera automaticamente os processos desse cliente.
 - Participar de um compromisso NÃO concede acesso ao processo vinculado.
 """
+from django.db.models import Q
+
 from apps.usuarios.models import Perfil
 
 
@@ -33,3 +35,28 @@ def clientes_visiveis(usuario):
     if not _ativo(usuario):
         return qs.none()
     return qs.filter(pk__in=AcessoCliente.objects.filter(usuario=usuario).values("cliente_id"))
+
+
+def processos_visiveis(usuario):
+    from apps.processos.models import AcessoProcesso, Processo
+
+    qs = Processo.objects.all()
+    if e_adm(usuario):
+        return qs
+    if not _ativo(usuario):
+        return qs.none()
+    autorizados = AcessoProcesso.objects.filter(usuario=usuario).values("processo_id")
+    if usuario.perfil == Perfil.ADV:
+        return qs.filter(Q(responsavel=usuario) | Q(pk__in=autorizados))
+    if usuario.perfil == Perfil.AST:
+        return qs.filter(pk__in=autorizados)
+    return qs.none()
+
+
+def pode_editar_processo(usuario, processo):
+    """ADM e ADV autorizados atualizam processos; AST apenas consulta (RF02)."""
+    if processo.arquivado:
+        return False
+    if e_adm(usuario):
+        return True
+    return usuario.perfil == Perfil.ADV and processos_visiveis(usuario).filter(pk=processo.pk).exists()

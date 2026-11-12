@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.core.acesso import clientes_visiveis, e_adm
+from apps.core.acesso import clientes_visiveis, e_adm, processos_visiveis
 from apps.core.permissoes import perfil_requerido
 from apps.core.utils import paginar
 from apps.usuarios.models import Perfil
@@ -45,8 +45,10 @@ def novo(request):
 
 def detalhe(request, pk):
     cliente = get_object_or_404(clientes_visiveis(request.user), pk=pk)
+    # Somente os vínculos permitidos ao usuário (RF03).
+    processos = processos_visiveis(request.user).filter(cliente=cliente).select_related("responsavel")
     return render(request, "clientes/detalhe.html", {
-        "cliente": cliente,
+        "cliente": cliente, "processos": processos,
     })
 
 

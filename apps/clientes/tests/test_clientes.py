@@ -52,6 +52,15 @@ class ClientesTests(f.Cenario):
         self.cli.refresh_from_db()
         self.assertEqual(self.cli.nome, "Cliente Alfa Fictício")
 
+    def test_detalhe_mostra_somente_processos_autorizados(self):
+        f.autorizar_cliente(self.ast, self.cli)
+        self.entrar(self.ast)
+        resposta = self.client.get(reverse("clientes:detalhe", args=[self.cli.pk]))
+        self.assertEqual(resposta.status_code, 200)
+        self.assertNotContains(resposta, self.proc.titulo)
+        f.autorizar_processo(self.ast, self.proc)
+        self.assertContains(self.client.get(reverse("clientes:detalhe", args=[self.cli.pk])), self.proc.titulo)
+
     def test_somente_adm_arquiva(self):
         f.autorizar_cliente(self.ast, self.cli)
         self.entrar(self.ast)
@@ -60,6 +69,8 @@ class ClientesTests(f.Cenario):
         self.client.post(reverse("clientes:arquivar", args=[self.cli.pk]))
         self.cli.refresh_from_db()
         self.assertTrue(self.cli.arquivado)
+        # RN08: vínculos preservados, sem exclusão física.
+        self.assertTrue(self.cli.processos.filter(pk=self.proc.pk).exists())
 
     def test_arquivar_exige_post(self):
         self.entrar(self.adm)

@@ -23,7 +23,7 @@ class ItemMenu:
 
 ITENS_MENU = (
     ItemMenu("Painel", "painel", TODOS, "core:painel"),
-    ItemMenu("Processos", "processos", TODOS),
+    ItemMenu("Processos", "processos", TODOS, "processos:lista"),
     ItemMenu("Clientes", "clientes", TODOS, "clientes:lista"),
     ItemMenu("Agenda", "agenda", TODOS),
     ItemMenu("Financeiro", "financeiro", (Perfil.ADM,)),

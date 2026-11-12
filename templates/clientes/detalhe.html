@@ -33,4 +33,27 @@
     <div class="largo"><dt>Observações</dt><dd class="texto-livre">{{ cliente.observacoes|default:"—" }}</dd></div>
   </dl>
 </section>
+
+<section class="cartao">
+  <div class="cartao-cabecalho"><h2>Processos vinculados que você pode consultar</h2></div>
+  {% if processos %}
+    <div class="tabela-rolagem">
+      <table class="tabela">
+        <thead><tr><th>Número</th><th>Título</th><th>Responsável</th><th>Situação</th></tr></thead>
+        <tbody>
+          {% for p in processos %}
+            <tr>
+              <td class="nowrap">{{ p.numero|default:"—" }}</td>
+              <td><a href="{{ p.get_absolute_url }}">{{ p.titulo }}</a></td>
+              <td>{{ p.responsavel.nome }}</td>
+              <td><span class="selo selo--{{ p.situacao }}">{{ p.get_situacao_display }}</span>{% if p.arquivado %} <span class="selo selo--arquivado">Arquivado</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="texto-suave">Nenhum processo deste cliente está autorizado para você.</p>
+  {% endif %}
+</section>
 {% endblock %}
