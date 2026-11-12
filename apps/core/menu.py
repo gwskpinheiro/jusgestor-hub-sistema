@@ -2,9 +2,7 @@
 
 Os perfis seguem o diagrama de casos de uso (Figura 1) e as regras RN03,
 RN05, RN06 e RN09. Esconder um item não substitui a verificação no servidor:
-cada view também verifica o perfil (RN07).
-
-``url`` = None indica módulo ainda não implementado nesta fase.
+cada view também verifica o perfil e a autorização sobre o registro (RN07).
 """
 from dataclasses import dataclass
 
@@ -30,7 +28,7 @@ ITENS_MENU = (
     ItemMenu("Documentos", "documentos", TODOS, "documentos:lista"),
     ItemMenu("Horas trabalhadas", "horas", (Perfil.ADM, Perfil.ADV), "horas:lista"),
     ItemMenu("Relatórios", "relatorios", (Perfil.ADM, Perfil.ADV), "relatorios:indice"),
-    ItemMenu("Usuários", "usuarios", (Perfil.ADM,)),
+    ItemMenu("Usuários", "usuarios", (Perfil.ADM,), "gestao_usuarios:lista"),
 )
 
 

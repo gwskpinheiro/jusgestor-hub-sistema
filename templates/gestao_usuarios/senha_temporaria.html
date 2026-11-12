@@ -1,0 +1,23 @@
+{% extends "core/layout.html" %}
+
+{% block titulo %}Senha temporária{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>Senha temporária</h1>
+    <p class="subtitulo">{{ motivo }}</p>
+  </div>
+</div>
+
+<section class="cartao formulario">
+  <dl class="dados">
+    <div><dt>Usuário</dt><dd>{{ usuario_alvo.nome }}</dd></div>
+    <div><dt>E-mail</dt><dd>{{ usuario_alvo.email }}</dd></div>
+    <div><dt>Perfil</dt><dd>{{ usuario_alvo.get_perfil_display }}</dd></div>
+  </dl>
+  <p class="aviso aviso--warning">Esta senha é exibida <strong>apenas agora</strong>. Entregue-a ao usuário por um canal seguro. A troca será exigida no primeiro acesso.</p>
+  <p class="senha-temporaria">{{ senha }}</p>
+  <div class="form-acoes"><a class="botao botao--primario" href="{% url 'gestao_usuarios:lista' %}">Concluir</a></div>
+</section>
+{% endblock %}
