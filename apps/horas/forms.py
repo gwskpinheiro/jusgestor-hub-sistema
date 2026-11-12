@@ -24,6 +24,12 @@ class RegistroHoraForm(forms.ModelForm):
         processos = processos_visiveis(usuario).filter(arquivado=False).select_related("cliente")
         self.fields["processo"].queryset = incluir_atual(processos, Processo, atual and atual.processo_id)
         self.fields["minutos"].min_value = 1
+        self.cobranca = atual.cobranca_ativa() if atual else None
+        if self.cobranca:
+            # RN10: o vínculo financeiro ativo bloqueia mudanças na duração.
+            for campo in ("processo", "minutos"):
+                self.fields[campo].disabled = True
+                self.fields[campo].help_text = "Bloqueado: registro vinculado a uma cobrança ativa."
 
     def clean_minutos(self):
         minutos = self.cleaned_data["minutos"]

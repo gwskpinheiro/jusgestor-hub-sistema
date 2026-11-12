@@ -1,0 +1,71 @@
+{% extends "core/layout.html" %}
+{% load formatos %}
+
+{% block titulo %}Lançamento{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>{{ lancamento.get_tipo_display }}: {{ lancamento.valor|moeda }}</h1>
+    <p class="subtitulo"><span class="selo selo--{{ lancamento.situacao }}">{{ lancamento.get_situacao_display }}</span>
+      {% if cobrancas %}· gerado a partir de horas trabalhadas{% endif %}</p>
+  </div>
+  <div class="acoes">
+    {% if lancamento.pendente %}<a class="botao botao--secundario" href="{% url 'financeiro:editar' lancamento.pk %}">Editar</a>{% endif %}
+    <a class="botao botao--secundario" href="{% url 'financeiro:lista' %}">Voltar</a>
+  </div>
+</div>
+
+<section class="cartao">
+  <dl class="dados">
+    <div class="largo"><dt>Descrição</dt><dd class="texto-livre">{{ lancamento.descricao }}</dd></div>
+    <div><dt>Vencimento</dt><dd>{{ lancamento.vencimento|date:"d/m/Y" }}</dd></div>
+    <div><dt>Data da quitação</dt><dd>{{ lancamento.data_quitacao|date:"d/m/Y"|default:"—" }}</dd></div>
+    <div><dt>Cliente</dt><dd>{% if lancamento.cliente %}<a href="{{ lancamento.cliente.get_absolute_url }}">{{ lancamento.cliente.nome }}</a>{% else %}—{% endif %}</dd></div>
+    <div><dt>Processo</dt><dd>{% if lancamento.processo %}<a href="{{ lancamento.processo.get_absolute_url }}">{{ lancamento.processo }}</a>{% else %}—{% endif %}</dd></div>
+    <div><dt>Registrado por</dt><dd>{{ lancamento.criado_por.nome }} em {{ lancamento.criado_em|date:"d/m/Y H:i" }}</dd></div>
+  </dl>
+</section>
+
+{% if lancamento.pendente %}
+<section class="cartao">
+  <h2>Quitar ou cancelar</h2>
+  <p class="texto-suave texto-pequeno">Sem parcelamento ou pagamento parcial: a quitação é do valor integral.</p>
+  <div class="acoes">
+    <form method="post" action="{% url 'financeiro:quitar' lancamento.pk %}" class="acoes" data-confirmar="Confirmar a quitação integral deste lançamento?">
+      {% csrf_token %}
+      <label for="id_data_quitacao" class="texto-pequeno">Data da quitação</label>
+      {{ form_quitacao.data_quitacao }}
+      <button type="submit" class="botao botao--primario">Quitar</button>
+    </form>
+    <form method="post" action="{% url 'financeiro:cancelar' lancamento.pk %}"
+          data-confirmar="Cancelar este lançamento?{% if cobrancas %} As horas vinculadas serão liberadas e o histórico será mantido.{% endif %}">
+      {% csrf_token %}
+      <button type="submit" class="botao botao--perigo">Cancelar lançamento</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+{% if cobrancas %}
+<section class="cartao">
+  <h2>Horas vinculadas</h2>
+  <div class="tabela-rolagem">
+    <table class="tabela">
+      <thead><tr><th>Data</th><th>Usuário</th><th>Atividade</th><th class="numero">Duração</th><th>Vínculo</th></tr></thead>
+      <tbody>
+        {% for c in cobrancas %}
+          <tr>
+            <td class="nowrap">{{ c.registro_hora.data_atividade|date:"d/m/Y" }}</td>
+            <td>{{ c.registro_hora.usuario.nome }}</td>
+            <td>{{ c.registro_hora.atividade|truncatechars:80 }}</td>
+            <td class="numero">{{ c.registro_hora.minutos|duracao }}</td>
+            <td class="nowrap">{% if c.ativa %}<span class="selo selo--cobrado">Ativo desde {{ c.vinculado_em|date:"d/m/Y" }}</span>{% else %}<span class="selo selo--cancelado">Liberado em {{ c.liberado_em|date:"d/m/Y" }}</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

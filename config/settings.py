@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.agenda",
     "apps.documentos",
     "apps.horas",
+    "apps.financeiro",
 ]
 
 MIDDLEWARE = [

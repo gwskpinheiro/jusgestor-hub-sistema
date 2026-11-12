@@ -87,4 +87,22 @@
   {% endif %}
 </section>
 {% endif %}
+
+{% if mostra_financeiro %}
+<section class="cartao">
+  <div class="cartao-cabecalho"><h2>Financeiro do processo</h2><a href="{% url 'financeiro:cobrar_horas' %}?processo={{ processo.pk }}">Cobrar horas</a></div>
+  {% if lancamentos %}
+    <ul class="lista-simples">
+      {% for l in lancamentos %}
+        <li>
+          <span><a href="{{ l.get_absolute_url }}">{{ l.descricao|truncatechars:70 }}</a><small>{{ l.get_tipo_display }} · vencimento {{ l.vencimento|date:"d/m/Y" }}</small></span>
+          <span>{{ l.valor|moeda }} <span class="selo selo--{{ l.situacao }}">{{ l.get_situacao_display }}</span></span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="texto-suave">Nenhum lançamento vinculado.</p>
+  {% endif %}
+</section>
+{% endif %}
 {% endblock %}

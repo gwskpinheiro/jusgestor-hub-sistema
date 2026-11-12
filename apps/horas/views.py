@@ -1,16 +1,22 @@
-"""Registrar horas (RF07; RN05, RN07)."""
+"""Registrar horas (RF07; RN05, RN07, RN10)."""
 from django.contrib import messages
-from django.db.models import Sum
+from django.db.models import Exists, OuterRef, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.dateparse import parse_date
 
 from apps.core.acesso import e_adm, processos_visiveis, registros_hora_visiveis
 from apps.core.permissoes import perfil_requerido
 from apps.core.utils import paginar
+from apps.financeiro.models import CobrancaHora
 from apps.usuarios.models import Perfil, Usuario
 
 from .forms import RegistroHoraForm
 from .models import RegistroHora
+
+
+def com_situacao_cobranca(qs):
+    ativa = CobrancaHora.objects.filter(registro_hora=OuterRef("pk"), liberado_em__isnull=True)
+    return qs.annotate(cobrado=Exists(ativa))
 
 
 @perfil_requerido(Perfil.ADM, Perfil.ADV)
@@ -34,6 +40,7 @@ def lista(request):
         qs = qs.filter(data_atividade__gte=de)
     if ate:
         qs = qs.filter(data_atividade__lte=ate)
+    qs = com_situacao_cobranca(qs)
     return render(request, "horas/lista.html", {
         "pagina": paginar(request, qs),
         "total_minutos": qs.aggregate(total=Sum("minutos"))["total"] or 0,
@@ -70,4 +77,5 @@ def editar(request, pk):
         return redirect("horas:lista")
     return render(request, "core/form_generico.html", {
         "form": form, "titulo": "Editar registro de horas", "voltar": "horas:lista",
+        "aviso": "Este registro está vinculado a uma cobrança ativa." if form.cobranca else "",
     })

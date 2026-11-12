@@ -1,6 +1,7 @@
-"""RF07 — horas trabalhadas (RN05, RN07)."""
+"""RF07 — horas trabalhadas (RN05, RN07, RN10)."""
 from datetime import date
 
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.urls import reverse
 
@@ -71,3 +72,27 @@ class HorasTests(f.Cenario):
         registro.refresh_from_db()
         self.assertEqual(registro.minutos, 45)
 
+    def test_vinculo_financeiro_ativo_bloqueia_duracao(self):
+        from apps.financeiro import servicos
+
+        registro = f.registro_hora(self.adv, self.proc, minutos=120)
+        servicos.converter_horas(administrador=self.adm, processo=self.proc, registros=[registro],
+                                 valor="300.00", descricao="Cobrança fictícia", vencimento=date(2026, 12, 1))
+        self.entrar(self.adv)
+        self.client.post(reverse("horas:editar", args=[registro.pk]),
+                         self.dados(minutos="10", atividade="Atividade revisada"))
+        registro.refresh_from_db()
+        self.assertEqual(registro.minutos, 120)  # campo bloqueado
+        self.assertEqual(registro.atividade, "Atividade revisada")
+        registro.minutos = 5
+        with self.assertRaises(ValidationError):
+            registro.save()  # proteção também no modelo
+
+    def test_lista_identifica_registros_vinculados_ao_financeiro(self):
+        from apps.financeiro import servicos
+
+        registro = f.registro_hora(self.adv, self.proc)
+        servicos.converter_horas(administrador=self.adm, processo=self.proc, registros=[registro],
+                                 valor="100.00", descricao="x", vencimento=date(2026, 12, 1))
+        self.entrar(self.adv)
+        self.assertContains(self.client.get(reverse("horas:lista")), "Vinculado ao financeiro")

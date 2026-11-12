@@ -1,0 +1,66 @@
+{% extends "core/layout.html" %}
+{% load formatos %}
+
+{% block titulo %}Financeiro{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>Financeiro</h1>
+    <p class="subtitulo">Receitas e despesas do escritório</p>
+  </div>
+  <div class="acoes">
+    <a class="botao botao--secundario" href="{% url 'financeiro:cobrar_horas' %}">Cobrar horas</a>
+    <a class="botao botao--primario" href="{% url 'financeiro:novo' %}">+ Novo lançamento</a>
+  </div>
+</div>
+
+<div class="cartoes">
+  <div class="cartao-resumo"><small>Receitas quitadas</small><strong class="valor-positivo">{{ totais.receitas|moeda }}</strong></div>
+  <div class="cartao-resumo"><small>Despesas quitadas</small><strong class="valor-negativo">{{ totais.despesas|moeda }}</strong></div>
+  <div class="cartao-resumo"><small>Saldo (quitados)</small><strong class="{% if totais.saldo < 0 %}valor-negativo{% else %}valor-positivo{% endif %}">{{ totais.saldo|moeda }}</strong></div>
+  <div class="cartao-resumo"><small>A receber / a pagar (pendentes)</small><strong>{{ totais.a_receber|moeda }} / {{ totais.a_pagar|moeda }}</strong></div>
+</div>
+
+<form class="filtros" method="get">
+  <div class="filtro-busca"><label for="q">Buscar</label><input type="search" id="q" name="q" value="{{ filtros.q }}" placeholder="Descrição, cliente ou processo"></div>
+  <div>
+    <label for="tipo">Tipo</label>
+    <select id="tipo" name="tipo"><option value="">Todos</option>
+      {% for valor, rotulo in tipos %}<option value="{{ valor }}"{% if valor == filtros.tipo %} selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="situacao">Situação</label>
+    <select id="situacao" name="situacao"><option value="">Todas</option>
+      {% for valor, rotulo in situacoes %}<option value="{{ valor }}"{% if valor == filtros.situacao %} selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label for="de">Vencimento de</label><input type="date" id="de" name="de" value="{{ filtros.de }}"></div>
+  <div><label for="ate">até</label><input type="date" id="ate" name="ate" value="{{ filtros.ate }}"></div>
+  <button type="submit" class="botao botao--secundario">Filtrar</button>
+</form>
+
+<div class="tabela-rolagem">
+  <table class="tabela">
+    <thead><tr><th>Vencimento</th><th>Tipo</th><th>Descrição</th><th>Cliente</th><th>Processo</th><th class="numero">Valor</th><th>Situação</th><th>Quitação</th></tr></thead>
+    <tbody>
+      {% for l in pagina %}
+        <tr>
+          <td class="nowrap">{{ l.vencimento|date:"d/m/Y" }}</td>
+          <td><span class="selo selo--{{ l.tipo }}">{{ l.get_tipo_display }}</span></td>
+          <td><a href="{{ l.get_absolute_url }}">{{ l.descricao|truncatechars:70 }}</a></td>
+          <td>{{ l.cliente.nome|default:"—" }}</td>
+          <td>{{ l.processo|default:"—" }}</td>
+          <td class="numero">{{ l.valor|moeda }}</td>
+          <td><span class="selo selo--{{ l.situacao }}">{{ l.get_situacao_display }}</span></td>
+          <td class="nowrap">{{ l.data_quitacao|date:"d/m/Y"|default:"—" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8" class="vazio">Nenhum lançamento encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "core/_paginacao.html" %}
+{% endblock %}

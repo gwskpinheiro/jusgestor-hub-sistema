@@ -10,6 +10,7 @@
     <p class="subtitulo">{% if visao == "equipe" %}Horas da equipe{% else %}Minhas horas{% endif %} · registro manual por processo</p>
   </div>
   <div class="acoes">
+    {% if adm %}<a class="botao botao--secundario" href="{% url 'financeiro:cobrar_horas' %}">Cobrar horas</a>{% endif %}
     <a class="botao botao--primario" href="{% url 'horas:novo' %}">+ Registrar horas</a>
   </div>
 </div>
@@ -47,7 +48,7 @@
 
 <div class="tabela-rolagem">
   <table class="tabela">
-    <thead><tr><th>Data</th>{% if visao == "equipe" %}<th>Usuário</th>{% endif %}<th>Processo</th><th>Atividade</th><th class="numero">Duração</th><th></th></tr></thead>
+    <thead><tr><th>Data</th>{% if visao == "equipe" %}<th>Usuário</th>{% endif %}<th>Processo</th><th>Atividade</th><th class="numero">Duração</th><th>Cobrança</th><th></th></tr></thead>
     <tbody>
       {% for h in pagina %}
         <tr>
@@ -56,10 +57,11 @@
           <td>{{ h.processo }}</td>
           <td>{{ h.atividade|truncatechars:90 }}</td>
           <td class="numero">{{ h.minutos|duracao }}</td>
+          <td>{% if h.cobrado %}<span class="selo selo--cobrado">Vinculado ao financeiro</span>{% else %}—{% endif %}</td>
           <td>{% if h.usuario_id == user.pk %}<a class="botao botao--secundario botao--pequeno" href="{% url 'horas:editar' h.pk %}">Editar</a>{% endif %}</td>
         </tr>
       {% empty %}
-        <tr><td colspan="6" class="vazio">Nenhum registro de horas encontrado.</td></tr>
+        <tr><td colspan="7" class="vazio">Nenhum registro de horas encontrado.</td></tr>
       {% endfor %}
     </tbody>
   </table>

@@ -1,0 +1,42 @@
+{% extends "core/layout.html" %}
+{% load formatos %}
+
+{% block titulo %}Cobrar horas{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>Converter horas em cobrança</h1>
+    <p class="subtitulo">O administrador seleciona as horas de um processo e confirma o valor</p>
+  </div>
+  <a class="botao botao--secundario" href="{% url 'financeiro:lista' %}">Voltar</a>
+</div>
+
+<form class="filtros" method="get">
+  <div class="filtro-busca">
+    <label for="id_processo">Processo</label>
+    {{ escolha.processo }}
+  </div>
+  <button type="submit" class="botao botao--secundario">Listar horas disponíveis</button>
+</form>
+
+{% if processo %}
+<section class="cartao formulario">
+  <h2>{{ processo }}</h2>
+  <p class="texto-suave">Cliente: {{ processo.cliente.nome }} · horas sem cobrança ativa: {{ total_disponivel|duracao }}</p>
+  {% if form.fields.registros.queryset %}
+    <form method="post" action="?processo={{ processo.pk }}" novalidate data-confirmar="Gerar a cobrança com o valor informado?">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="aviso aviso--error" role="alert">{% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}</div>
+      {% endif %}
+      {% for campo in form.visible_fields %}{% include "core/_campo.html" %}{% endfor %}
+      <p class="texto-suave texto-pequeno">Será criada uma receita pendente vinculada ao processo e ao cliente. Cada registro admite um único vínculo ativo; cancelar o lançamento libera as horas e mantém o histórico.</p>
+      <div class="form-acoes"><button type="submit" class="botao botao--primario">Gerar cobrança</button></div>
+    </form>
+  {% else %}
+    <p class="vazio">Nenhum registro de horas disponível para cobrança neste processo.</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

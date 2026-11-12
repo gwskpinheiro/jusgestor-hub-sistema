@@ -1,5 +1,6 @@
 """Tabela ``registro_hora`` (Figura 3)."""
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -30,3 +31,16 @@ class RegistroHora(models.Model):
     def get_absolute_url(self):
         return reverse("horas:editar", args=[self.pk])
 
+    def cobranca_ativa(self):
+        return self.cobrancas.filter(liberado_em__isnull=True).select_related("lancamento").first()
+
+    def save(self, *args, **kwargs):
+        # RN10: com vínculo financeiro ativo, a duração e o processo não mudam.
+        if self.pk:
+            anterior = RegistroHora.objects.filter(pk=self.pk).values("minutos", "processo_id").first()
+            if anterior and (anterior["minutos"] != self.minutos or anterior["processo_id"] != self.processo_id):
+                if self.cobrancas.filter(liberado_em__isnull=True).exists():
+                    raise ValidationError(
+                        "Registro vinculado a uma cobrança ativa: a duração e o processo não podem ser alterados."
+                    )
+        super().save(*args, **kwargs)

@@ -83,6 +83,9 @@ def detalhe(request, pk):
         contexto["horas"] = horas.order_by("-data_atividade")[:10]
         contexto["total_minutos"] = horas.aggregate(total=Sum("minutos"))["total"] or 0
         contexto["mostra_horas"] = True
+    if e_adm(usuario):
+        contexto["lancamentos"] = processo.lancamentos.order_by("-vencimento")[:10]
+        contexto["mostra_financeiro"] = True
     return render(request, "processos/detalhe.html", contexto)
 
 

@@ -26,7 +26,7 @@ ITENS_MENU = (
     ItemMenu("Processos", "processos", TODOS, "processos:lista"),
     ItemMenu("Clientes", "clientes", TODOS, "clientes:lista"),
     ItemMenu("Agenda", "agenda", TODOS, "agenda:lista"),
-    ItemMenu("Financeiro", "financeiro", (Perfil.ADM,)),
+    ItemMenu("Financeiro", "financeiro", (Perfil.ADM,), "financeiro:lista"),
     ItemMenu("Documentos", "documentos", TODOS, "documentos:lista"),
     ItemMenu("Horas trabalhadas", "horas", (Perfil.ADM, Perfil.ADV), "horas:lista"),
     ItemMenu("Relatórios", "relatorios", (Perfil.ADM, Perfil.ADV)),
