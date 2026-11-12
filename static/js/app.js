@@ -25,4 +25,19 @@
       definirMenu(false);
     }
   });
+
+  // Confirmação antes de ações relevantes (arquivar, cancelar, redefinir senha).
+  document.addEventListener("submit", function (evento) {
+    var mensagem = evento.target.getAttribute("data-confirmar");
+    if (mensagem && !window.confirm(mensagem)) {
+      evento.preventDefault();
+    }
+  });
+
+  // Impressão em PDF pelo navegador (RF08).
+  document.addEventListener("click", function (evento) {
+    if (evento.target.closest && evento.target.closest("[data-imprimir]")) {
+      window.print();
+    }
+  });
 })();

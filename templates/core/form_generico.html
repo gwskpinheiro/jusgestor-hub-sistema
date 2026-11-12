@@ -1,0 +1,31 @@
+{% extends "core/layout.html" %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div><h1>{{ titulo }}</h1></div>
+</div>
+
+{% if aviso %}<p class="aviso aviso--warning">{{ aviso }}</p>{% endif %}
+
+<section class="cartao formulario">
+  <form method="post" novalidate{% if form.is_multipart %} enctype="multipart/form-data"{% endif %}>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="aviso aviso--error" role="alert">
+        {% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}
+      </div>
+    {% endif %}
+    {% for campo in form.hidden_fields %}{{ campo }}{% endfor %}
+    {% for campo in form.visible_fields %}
+      {% include "core/_campo.html" %}
+    {% endfor %}
+    <p class="texto-suave texto-pequeno">Campos marcados com * são obrigatórios.</p>
+    <div class="form-acoes">
+      <button type="submit" class="botao botao--primario">Salvar</button>
+      <a class="botao botao--secundario" href="{% if voltar_objeto %}{{ voltar_objeto.get_absolute_url }}{% else %}{% url voltar %}{% endif %}">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
