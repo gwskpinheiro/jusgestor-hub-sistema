@@ -121,6 +121,7 @@ fictícios (RNF08).
 | Parar | `docker compose down` |
 | Criar migrações | `docker compose run --rm web python manage.py makemigrations` |
 | Aplicar migrações | `docker compose run --rm web python manage.py migrate` |
+| Dados fictícios (clientes, processos, agenda) + medição do RNF04, só banco local | `docker compose exec web python manage.py popular_dados_teste --medir --http` |
 
 `docker compose down -v` **apaga** o banco e os documentos (volumes). Só use
 depois de fazer uma cópia de segurança.
