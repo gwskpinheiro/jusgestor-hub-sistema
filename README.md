@@ -10,18 +10,32 @@ está no artigo, em `docs/referencias/`.
 **Tecnologias:** Python 3.12, Django 5.2 LTS, PostgreSQL 17, HTML, CSS,
 JavaScript e Docker Compose.
 
-## Situação atual: fase 1 (fundação)
+## Situação atual: primeira versão integrada dos módulos
 
-| Pronto | Pendente (próximas fases) |
+Implementado e coberto por testes automatizados (PostgreSQL local):
+
+| Módulo | Requisitos |
 |---|---|
-| Estrutura Django e Docker Compose com PostgreSQL 17 | Clientes, processos, agenda, documentos |
-| Modelo de usuário (tabela `usuario`) | Horas trabalhadas, financeiro, relatórios |
-| Login por e-mail e senha, logout | Gerenciamento de usuários (RF09) |
-| Troca obrigatória da senha temporária | Autorização por registro (acesso a clientes e processos) |
-| Sessão expira após 30 min sem atividade | Rotinas de backup e restauração (RNF07) |
-| Bloqueio de 15 min após 5 falhas consecutivas | |
-| Contas inativas não entram | |
-| Layout base com menu por perfil | |
+| Autenticação | RF01 |
+| Clientes | RF03 |
+| Processos | RF02 |
+| Agenda | RF04 |
+| Financeiro | RF05 |
+| Documentos | RF06 |
+| Horas trabalhadas | RF07 |
+| Relatórios | RF08 |
+| Usuários e acessos | RF09 |
+
+As regras RN01 a RN10 são verificadas no servidor e por registro. As decisões
+de interpretação estão em
+[docs/alteracoes-modelo.md](docs/alteracoes-modelo.md).
+
+Pendente:
+- rotinas de backup e restauração (RNF07);
+- armazenamento persistente de documentos no Render;
+- migrações destes módulos no Supabase;
+- conferência visual em navegador (Chrome e Firefox, 360 e 1366 px) e
+  medição de desempenho (RNF04).
 
 ## Pré-requisitos
 
