@@ -31,7 +31,9 @@ de interpretação estão em
 [docs/alteracoes-modelo.md](docs/alteracoes-modelo.md).
 
 Pendente:
-- rotinas de backup e restauração (RNF07);
+- RNF07: os scripts de cópia e de teste de restauração estão prontos
+  ([docs/backup.md](docs/backup.md)), mas a rotina de copiar após cada sessão
+  com alterações e manter a cópia em outro dispositivo depende do usuário;
 - armazenamento persistente de documentos no Render;
 - migrações destes módulos no Supabase;
 - conferência visual em navegador (Chrome e Firefox, 360 e 1366 px) e
@@ -126,6 +128,17 @@ fictícios (RNF08).
 `docker compose down -v` **apaga** o banco e os documentos (volumes). Só use
 depois de fazer uma cópia de segurança.
 
+## Backup e restauração (RNF07)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\backup\backup.ps1               # copia banco e documentos para backups\
+powershell -ExecutionPolicy Bypass -File scripts\backup\testar_restauracao.ps1   # restaura numa instância descartável e compara
+```
+
+Copie após cada sessão com alterações e antes de atualizações, e guarde a
+pasta gerada em outro dispositivo. Detalhes e a restauração real estão em
+[docs/backup.md](docs/backup.md).
+
 ## Estrutura
 
 ```
@@ -140,6 +153,8 @@ docs/referencias/    artigo do TCC (não modificar)
 docs/alteracoes-modelo.md  diferenças em relação ao modelo relacional do artigo
 docs/supabase.md     conexão com o PostgreSQL do Supabase
 docs/render.md       hospedagem no Render
+docs/backup.md       backup e teste de restauração (RNF07)
+scripts/backup/      scripts de cópia e de teste de restauração
 ```
 
 ## Perfis e permissões
