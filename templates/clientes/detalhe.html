@@ -1,0 +1,36 @@
+{% extends "core/layout.html" %}
+{% load formatos %}
+
+{% block titulo %}{{ cliente.nome }}{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>{{ cliente.nome }}</h1>
+    <p class="subtitulo">Cliente {% if cliente.arquivado %}<span class="selo selo--arquivado">Arquivado</span>{% endif %}</p>
+  </div>
+  <div class="acoes">
+    {% if not cliente.arquivado %}<a class="botao botao--secundario" href="{% url 'clientes:editar' cliente.pk %}">Editar</a>{% endif %}
+    {% if user.perfil == "ADM" %}
+      <form method="post" action="{% url 'clientes:arquivar' cliente.pk %}"
+            data-confirmar="{% if cliente.arquivado %}Reativar este cliente?{% else %}Arquivar este cliente? Os processos e documentos continuam vinculados.{% endif %}">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="{% if cliente.arquivado %}desarquivar{% else %}arquivar{% endif %}">
+        <button type="submit" class="botao botao--perigo">{% if cliente.arquivado %}Reativar{% else %}Arquivar{% endif %}</button>
+      </form>
+    {% endif %}
+    <a class="botao botao--secundario" href="{% url 'clientes:lista' %}">Voltar</a>
+  </div>
+</div>
+
+<section class="cartao">
+  <dl class="dados">
+    <div><dt>CPF/CNPJ</dt><dd>{{ cliente.cpf_cnpj|cpf_cnpj }}</dd></div>
+    <div><dt>E-mail</dt><dd>{{ cliente.email|default:"—" }}</dd></div>
+    <div><dt>Telefone</dt><dd>{{ cliente.telefone|default:"—" }}</dd></div>
+    <div><dt>Cadastrado em</dt><dd>{{ cliente.criado_em|date:"d/m/Y" }}</dd></div>
+    <div class="largo"><dt>Endereço</dt><dd class="texto-livre">{{ cliente.endereco|default:"—" }}</dd></div>
+    <div class="largo"><dt>Observações</dt><dd class="texto-livre">{{ cliente.observacoes|default:"—" }}</dd></div>
+  </dl>
+</section>
+{% endblock %}
