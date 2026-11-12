@@ -119,3 +119,7 @@ class AgendaTests(f.Cenario):
         lista = self.client.get(reverse("agenda:lista"))
         self.assertContains(lista, "Vencido")
         self.assertEqual(lista.context["total_destacados"], 2)
+        painel = self.client.get(reverse("core:painel"))
+        self.assertContains(painel, "Prazo vencido fictício")
+        self.assertContains(painel, "Reunião amanhã fictícia")
+        self.assertNotContains(painel, "Reunião distante fictícia")
