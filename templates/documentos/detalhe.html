@@ -1,0 +1,58 @@
+{% extends "core/layout.html" %}
+{% load formatos %}
+
+{% block titulo %}{{ documento.titulo }}{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>{{ documento.titulo }}</h1>
+    <p class="subtitulo">Documento · criado em {{ documento.criado_em|date:"d/m/Y" }}</p>
+  </div>
+  <div class="acoes">
+    <a class="botao botao--secundario" href="{% url 'documentos:editar' documento.pk %}">Editar</a>
+    <a class="botao botao--secundario" href="{% url 'documentos:lista' %}">Voltar</a>
+  </div>
+</div>
+
+<section class="cartao">
+  <dl class="dados">
+    <div><dt>Cliente</dt><dd>{{ documento.cliente.nome|default:"—" }}</dd></div>
+    <div><dt>Processo</dt><dd>{% if documento.processo %}<a href="{{ documento.processo.get_absolute_url }}">{{ documento.processo }}</a>{% else %}—{% endif %}</dd></div>
+    <div class="largo"><dt>Descrição</dt><dd class="texto-livre">{{ documento.descricao|default:"—" }}</dd></div>
+  </dl>
+</section>
+
+<section class="cartao">
+  <div class="cartao-cabecalho"><h2>Versões</h2></div>
+  <p class="texto-suave texto-pequeno">As versões anteriores são preservadas com autoria e data.</p>
+  <div class="tabela-rolagem">
+    <table class="tabela">
+      <thead><tr><th>Versão</th><th>Arquivo</th><th>Tamanho</th><th>Autor</th><th>Enviado em</th><th></th></tr></thead>
+      <tbody>
+        {% for v in versoes %}
+          <tr>
+            <td>v{{ v.numero_versao }}{% if forloop.first %} <span class="selo selo--ativo">Atual</span>{% endif %}</td>
+            <td>{{ v.nome_arquivo }}</td>
+            <td class="nowrap">{{ v.tamanho_bytes|tamanho_arquivo }}</td>
+            <td>{{ v.autor.nome }}</td>
+            <td class="nowrap">{{ v.enviado_em|date:"d/m/Y H:i" }}</td>
+            <td><a class="botao botao--secundario botao--pequeno" href="{% url 'documentos:baixar' v.pk %}">Baixar</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="vazio">Nenhuma versão enviada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="cartao formulario">
+  <h2>Enviar nova versão</h2>
+  <form method="post" action="{% url 'documentos:nova_versao' documento.pk %}" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% with campo=form_versao.arquivo %}{% include "core/_campo.html" %}{% endwith %}
+    <button type="submit" class="botao botao--primario">Enviar versão</button>
+  </form>
+</section>
+{% endblock %}

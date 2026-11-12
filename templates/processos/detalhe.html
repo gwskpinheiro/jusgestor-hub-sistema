@@ -39,6 +39,22 @@
 </section>
 
 <section class="cartao">
+  <div class="cartao-cabecalho">
+    <h2>Documentos</h2>
+    {% if not processo.arquivado %}<a href="{% url 'documentos:novo' %}?processo={{ processo.pk }}">Enviar documento</a>{% endif %}
+  </div>
+  {% if documentos %}
+    <ul class="lista-simples">
+      {% for d in documentos %}
+        <li><span><a href="{{ d.get_absolute_url }}">{{ d.titulo }}</a><small>{{ d.criado_em|date:"d/m/Y" }}</small></span></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="texto-suave">Nenhum documento vinculado.</p>
+  {% endif %}
+</section>
+
+<section class="cartao">
   <div class="cartao-cabecalho"><h2>Agenda</h2><a href="{% url 'agenda:novo' %}">Novo compromisso</a></div>
   {% if compromissos %}
     <ul class="lista-simples">

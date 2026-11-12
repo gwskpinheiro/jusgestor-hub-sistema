@@ -1,0 +1,43 @@
+{% extends "core/layout.html" %}
+
+{% block titulo %}Documentos{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>Documentos</h1>
+    <p class="subtitulo">Documentos vinculados a clientes e processos autorizados</p>
+  </div>
+  <a class="botao botao--primario" href="{% url 'documentos:novo' %}">+ Enviar documento</a>
+</div>
+
+<form class="filtros" method="get" role="search">
+  <div class="filtro-busca">
+    <label for="q">Buscar</label>
+    <input type="search" id="q" name="q" value="{{ busca }}" placeholder="Título, cliente ou processo">
+  </div>
+  <button type="submit" class="botao botao--secundario">Filtrar</button>
+</form>
+
+<div class="tabela-rolagem">
+  <table class="tabela">
+    <thead><tr><th>Título</th><th>Cliente</th><th>Processo</th><th>Versão atual</th><th>Ações</th></tr></thead>
+    <tbody>
+      {% for d in pagina %}
+        {% with v=d.versoes.all|first %}
+        <tr>
+          <td><a href="{{ d.get_absolute_url }}">{{ d.titulo }}</a></td>
+          <td>{{ d.cliente.nome|default:"—" }}</td>
+          <td>{{ d.processo|default:"—" }}</td>
+          <td class="nowrap">{% if v %}v{{ v.numero_versao }} · {{ v.enviado_em|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+          <td>{% if v %}<a class="botao botao--secundario botao--pequeno" href="{% url 'documentos:baixar' v.pk %}">Baixar</a>{% endif %}</td>
+        </tr>
+        {% endwith %}
+      {% empty %}
+        <tr><td colspan="5" class="vazio">Nenhum documento encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "core/_paginacao.html" %}
+{% endblock %}

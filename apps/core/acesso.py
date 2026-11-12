@@ -74,3 +74,19 @@ def compromissos_visiveis(usuario):
     return qs.filter(
         Q(responsavel=usuario) | Q(pk__in=participa) | Q(processo__in=processos_visiveis(usuario))
     )
+
+
+def documentos_visiveis(usuario):
+    """Documento de processo exige acesso ao processo; documento só de cliente
+    exige acesso ao cliente."""
+    from apps.documentos.models import Documento
+
+    qs = Documento.objects.all()
+    if e_adm(usuario):
+        return qs
+    if not _ativo(usuario):
+        return qs.none()
+    return qs.filter(
+        Q(processo__in=processos_visiveis(usuario))
+        | Q(processo__isnull=True, cliente__in=clientes_visiveis(usuario))
+    )

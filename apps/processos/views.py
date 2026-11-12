@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core.acesso import (
     compromissos_visiveis,
+    documentos_visiveis,
     e_adm,
     pode_editar_processo,
     processos_visiveis,
@@ -72,6 +73,7 @@ def detalhe(request, pk):
         "processo": processo,
         "pode_editar": pode_editar_processo(usuario, processo),
         "consulta_basica": usuario.perfil == Perfil.AST,
+        "documentos": documentos_visiveis(usuario).filter(processo=processo).order_by("-criado_em"),
         "compromissos": compromissos_visiveis(usuario).filter(processo=processo)
         .select_related("responsavel").order_by("-inicio")[:10],
     }

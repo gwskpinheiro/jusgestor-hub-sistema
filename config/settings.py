@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.clientes",
     "apps.processos",
     "apps.agenda",
+    "apps.documentos",
 ]
 
 MIDDLEWARE = [
