@@ -60,3 +60,17 @@ def pode_editar_processo(usuario, processo):
     if e_adm(usuario):
         return True
     return usuario.perfil == Perfil.ADV and processos_visiveis(usuario).filter(pk=processo.pk).exists()
+
+
+def compromissos_visiveis(usuario):
+    from apps.agenda.models import Compromisso, ParticipanteCompromisso
+
+    qs = Compromisso.objects.all()
+    if e_adm(usuario):
+        return qs
+    if not _ativo(usuario):
+        return qs.none()
+    participa = ParticipanteCompromisso.objects.filter(usuario=usuario).values("compromisso_id")
+    return qs.filter(
+        Q(responsavel=usuario) | Q(pk__in=participa) | Q(processo__in=processos_visiveis(usuario))
+    )

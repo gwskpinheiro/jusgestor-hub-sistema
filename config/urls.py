@@ -5,6 +5,7 @@ urlpatterns = [
     path("conta/", include("apps.usuarios.urls")),
     path("clientes/", include("apps.clientes.urls")),
     path("processos/", include("apps.processos.urls")),
+    path("agenda/", include("apps.agenda.urls")),
 ]
 
 handler403 = "apps.core.views.erro_403"

@@ -1,0 +1,46 @@
+{% extends "core/layout.html" %}
+
+{% block titulo %}{{ compromisso.titulo }}{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>{{ compromisso.titulo }}</h1>
+    <p class="subtitulo">
+      {{ compromisso.get_tipo_display }}
+      <span class="selo selo--{{ compromisso.situacao }}">{{ compromisso.get_situacao_display }}</span>
+      {% if destaque == "vencido" %}<span class="selo selo--vencido">Vencido</span>{% elif destaque == "proximo" %}<span class="selo selo--proximo">Próximas 24 horas</span>{% endif %}
+    </p>
+  </div>
+  <div class="acoes">
+    <a class="botao botao--secundario" href="{% url 'agenda:editar' compromisso.pk %}">Editar</a>
+    <form method="post" action="{% url 'agenda:situacao' compromisso.pk %}" class="acoes">
+      {% csrf_token %}
+      {% if compromisso.situacao == "pendente" %}
+        <button type="submit" name="situacao" value="concluido" class="botao botao--secundario">Concluir</button>
+        <button type="submit" name="situacao" value="cancelado" class="botao botao--perigo">Cancelar</button>
+      {% else %}
+        <button type="submit" name="situacao" value="pendente" class="botao botao--secundario">Reabrir</button>
+      {% endif %}
+    </form>
+    <a class="botao botao--secundario" href="{% url 'agenda:lista' %}">Voltar</a>
+  </div>
+</div>
+
+<section class="cartao">
+  <dl class="dados">
+    <div><dt>Data e hora</dt><dd>{{ compromisso.inicio|date:"d/m/Y H:i" }}</dd></div>
+    <div><dt>Término</dt><dd>{{ compromisso.fim|date:"d/m/Y H:i"|default:"—" }}</dd></div>
+    <div><dt>Responsável</dt><dd>{{ compromisso.responsavel.nome }}</dd></div>
+    <div><dt>Processo</dt><dd>
+      {% if not compromisso.processo %}—
+      {% elif ve_processo %}<a href="{{ compromisso.processo.get_absolute_url }}">{{ compromisso.processo }}</a>
+      {% else %}Vinculado a um processo sem acesso para você{% endif %}
+    </dd></div>
+    <div class="largo"><dt>Participantes</dt><dd>
+      {% for p in participantes %}{{ p.usuario.nome }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+    </dd></div>
+    <div class="largo"><dt>Descrição</dt><dd class="texto-livre">{{ compromisso.descricao|default:"—" }}</dd></div>
+  </dl>
+</section>
+{% endblock %}

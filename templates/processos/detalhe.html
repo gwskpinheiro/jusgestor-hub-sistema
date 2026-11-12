@@ -37,4 +37,20 @@
     {% endif %}
   </dl>
 </section>
+
+<section class="cartao">
+  <div class="cartao-cabecalho"><h2>Agenda</h2><a href="{% url 'agenda:novo' %}">Novo compromisso</a></div>
+  {% if compromissos %}
+    <ul class="lista-simples">
+      {% for c in compromissos %}
+        <li>
+          <span><a href="{{ c.get_absolute_url }}">{{ c.titulo }}</a><small>{{ c.get_tipo_display }} · {{ c.inicio|date:"d/m/Y H:i" }} · {{ c.responsavel.nome }}</small></span>
+          <span class="selo selo--{{ c.situacao }}">{{ c.get_situacao_display }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="texto-suave">Nenhum compromisso vinculado.</p>
+  {% endif %}
+</section>
 {% endblock %}

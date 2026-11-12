@@ -1,9 +1,12 @@
 """Dados fictícios para os testes (RNF08). Nenhum dado real é usado."""
 import itertools
 import secrets
+from datetime import timedelta
 
 from django.test import TestCase
+from django.utils import timezone
 
+from apps.agenda.models import Compromisso, ParticipanteCompromisso
 from apps.clientes.models import AcessoCliente, Cliente
 from apps.processos.models import AcessoProcesso, Processo
 from apps.usuarios.models import Perfil, Usuario
@@ -35,6 +38,15 @@ def autorizar_cliente(u, c):
 
 def autorizar_processo(u, p):
     AcessoProcesso.objects.create(usuario=u, processo=p)
+
+
+def compromisso(responsavel, processo_=None, participantes=(), **extra):
+    extra.setdefault("titulo", f"Compromisso Fictício {next(_seq)}")
+    extra.setdefault("inicio", timezone.now() + timedelta(days=3))
+    c = Compromisso.objects.create(responsavel=responsavel, processo=processo_, **extra)
+    for u in participantes:
+        ParticipanteCompromisso.objects.create(compromisso=c, usuario=u)
+    return c
 
 
 class Cenario(TestCase):
