@@ -1,6 +1,8 @@
 {% extends "core/layout.html" %}
 
 {% block titulo %}Relatório: {{ tipo.titulo }}{% endblock %}
+{# Ao "Salvar como PDF", o navegador sugere o título da página como nome do arquivo. #}
+{% block titulo_documento %}{% if nome_pdf %}{{ nome_pdf }}{% else %}{{ block.super }}{% endif %}{% endblock %}
 
 {% block conteudo %}
 <div class="cabecalho-pagina nao-imprimir">

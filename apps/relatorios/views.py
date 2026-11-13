@@ -26,22 +26,28 @@ class TipoRelatorio:
     perfis: tuple
     filtro: type
     gerador: object
+    nome_arquivo: str  # parte do nome sugerido para o PDF (sem acentos nem espaços)
 
 
 TIPOS = {
     t.chave: t
     for t in (
         TipoRelatorio("processos", "Processos", "Processos autorizados por situação, responsável e cadastro.",
-                      (Perfil.ADM, Perfil.ADV), forms.FiltroProcessos, geradores.processos),
+                      (Perfil.ADM, Perfil.ADV), forms.FiltroProcessos, geradores.processos, "Processos"),
         TipoRelatorio("agenda", "Agenda", "Compromissos, tarefas e prazos com destaques de vencimento.",
-                      (Perfil.ADM, Perfil.ADV), forms.FiltroAgenda, geradores.agenda),
+                      (Perfil.ADM, Perfil.ADV), forms.FiltroAgenda, geradores.agenda, "Agenda"),
         TipoRelatorio("horas", "Horas trabalhadas", "Horas por período e processo, com indicação de cobrança.",
-                      (Perfil.ADM, Perfil.ADV), forms.FiltroHoras, geradores.horas),
+                      (Perfil.ADM, Perfil.ADV), forms.FiltroHoras, geradores.horas, "Horas_Trabalhadas"),
         # RN09: o financeiro permanece exclusivo de ADM.
         TipoRelatorio("financeiro", "Financeiro", "Receitas e despesas por vencimento e situação.",
-                      (Perfil.ADM,), forms.FiltroFinanceiro, geradores.financeiro),
+                      (Perfil.ADM,), forms.FiltroFinanceiro, geradores.financeiro, "Financeiro"),
     )
 }
+
+
+def nome_pdf(tipo, data):
+    """Nome sugerido ao salvar em PDF pelo navegador: JusGestor_Relatorio_Financeiro_12-11-2026."""
+    return f"JusGestor_Relatorio_{tipo.nome_arquivo}_{data:%d-%m-%Y}"
 
 PREFIXOS_FORMULA = ("=", "+", "-", "@", "\t", "\r")
 
@@ -85,8 +91,11 @@ def relatorio(request, tipo):
         resultado = definicao.gerador(request.user, form.cleaned_data)
         if request.GET.get("formato") == "csv" and not resultado.vazio:
             return _csv(definicao, resultado)
+    emitido_em = timezone.localtime()
     return render(request, "relatorios/relatorio.html", {
         "tipo": definicao, "form": form, "solicitado": solicitado, "resultado": resultado,
         "linhas_html": resultado.linhas[: geradores.LIMITE_HTML] if resultado else [],
-        "limite": geradores.LIMITE_HTML, "emitido_em": timezone.localtime(),
+        "limite": geradores.LIMITE_HTML, "emitido_em": emitido_em,
+        # Só há o que imprimir quando o relatório foi gerado com dados.
+        "nome_pdf": nome_pdf(definicao, emitido_em) if resultado and not resultado.vazio else "",
     })
