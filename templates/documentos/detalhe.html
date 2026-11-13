@@ -37,7 +37,12 @@
             <td class="nowrap">{{ v.tamanho_bytes|tamanho_arquivo }}</td>
             <td>{{ v.autor.nome }}</td>
             <td class="nowrap">{{ v.enviado_em|date:"d/m/Y H:i" }}</td>
-            <td><a class="botao botao--secundario botao--pequeno" href="{% url 'documentos:baixar' v.pk %}">Baixar</a></td>
+            <td>
+              <div class="acoes">
+                {% if v.visualizavel %}<a class="botao botao--secundario botao--pequeno" href="{% url 'documentos:visualizar' v.pk %}" target="_blank" rel="noopener" aria-label="Visualizar {{ v.nome_arquivo }} (v{{ v.numero_versao }}) em nova aba">Visualizar</a>{% endif %}
+                <a class="botao botao--secundario botao--pequeno" href="{% url 'documentos:baixar' v.pk %}" aria-label="Baixar {{ v.nome_arquivo }} (v{{ v.numero_versao }})">Baixar</a>
+              </div>
+            </td>
           </tr>
         {% empty %}
           <tr><td colspan="6" class="vazio">Nenhuma versão enviada.</td></tr>

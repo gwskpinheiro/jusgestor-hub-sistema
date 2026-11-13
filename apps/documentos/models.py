@@ -16,6 +16,8 @@ TIPOS_PERMITIDOS = {
     "jpeg": "image/jpeg",
 }
 TAMANHO_MAXIMO = 10 * 1024 * 1024
+# Tipos que o navegador exibe sem programas externos (botão "Visualizar").
+TIPOS_VISUALIZAVEIS = ("pdf", "png", "jpg", "jpeg")
 
 
 class Documento(models.Model):
@@ -78,3 +80,7 @@ class VersaoDocumento(models.Model):
 
     def __str__(self):
         return f"{self.nome_arquivo} (v{self.numero_versao})"
+
+    @property
+    def visualizavel(self):
+        return self.extensao in TIPOS_VISUALIZAVEIS

@@ -30,7 +30,12 @@
           <td>{{ d.cliente.nome|default:"—" }}</td>
           <td>{{ d.processo|default:"—" }}</td>
           <td class="nowrap">{% if v %}v{{ v.numero_versao }} · {{ v.enviado_em|date:"d/m/Y" }}{% else %}—{% endif %}</td>
-          <td>{% if v %}<a class="botao botao--secundario botao--pequeno" href="{% url 'documentos:baixar' v.pk %}">Baixar</a>{% endif %}</td>
+          <td>{% if v %}
+            <div class="acoes">
+              {% if v.visualizavel %}<a class="botao botao--secundario botao--pequeno" href="{% url 'documentos:visualizar' v.pk %}" target="_blank" rel="noopener" aria-label="Visualizar {{ d.titulo }} em nova aba">Visualizar</a>{% endif %}
+              <a class="botao botao--secundario botao--pequeno" href="{% url 'documentos:baixar' v.pk %}" aria-label="Baixar {{ d.titulo }}">Baixar</a>
+            </div>
+          {% endif %}</td>
         </tr>
         {% endwith %}
       {% empty %}

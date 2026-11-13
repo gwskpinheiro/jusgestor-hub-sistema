@@ -76,21 +76,39 @@ def nova_versao(request, pk):
     }, status=400)
 
 
-def baixar(request, pk):
-    """Download protegido: verifica no servidor a permissão sobre o documento."""
-    versao = get_object_or_404(
+def _versao_autorizada(request, pk):
+    """Versão de um documento que o usuário pode consultar; caso contrário, 404 (RN07)."""
+    return get_object_or_404(
         VersaoDocumento.objects.select_related("documento"),
         pk=pk, documento__in=documentos_visiveis(request.user),
     )
+
+
+def _responder_arquivo(versao, anexo):
     try:
         caminho = caminho_absoluto(versao)
         arquivo = open(caminho, "rb")
     except (OSError, ValidationError):
         raise Http404("Arquivo não encontrado.")
     resposta = FileResponse(
-        arquivo, as_attachment=True, filename=versao.nome_arquivo,
+        arquivo, as_attachment=anexo, filename=versao.nome_arquivo,
         content_type=TIPOS_PERMITIDOS.get(versao.extensao, "application/octet-stream"),
     )
+    # Arquivo privado: sem cache compartilhado e sem adivinhação de tipo pelo navegador.
     resposta["Cache-Control"] = "private, no-store"
     resposta["X-Content-Type-Options"] = "nosniff"
     return resposta
+
+
+def baixar(request, pk):
+    """Download protegido: verifica no servidor a permissão sobre o documento."""
+    return _responder_arquivo(_versao_autorizada(request, pk), anexo=True)
+
+
+def visualizar(request, pk):
+    """Exibe PDF, PNG ou JPEG no navegador (nova aba), com as mesmas verificações
+    do download. DOCX e outros tipos não são exibidos: use "Baixar"."""
+    versao = _versao_autorizada(request, pk)
+    if not versao.visualizavel:
+        raise Http404("Este tipo de arquivo não pode ser visualizado no navegador.")
+    return _responder_arquivo(versao, anexo=False)
