@@ -12,12 +12,20 @@
          registros e hash de cada tabela, restrições, índices, sequências,
          FKs validadas, órfãos por chave estrangeira, SHA-256 de cada documento
          e existência/tamanho do arquivo de cada versão registrada;
-      5. lê o banco restaurado pelo Django (verificar_banco e contagem pelo ORM);
+      5. lê o banco restaurado pelo Django, com a versão do código cujas
+         migrações são EXATAMENTE as registradas na cópia (o código atual, ou um
+         commit anterior extraído do Git para uma pasta temporária); nenhuma
+         migração é aplicada no banco restaurado;
       6. controle negativo: altera de propósito um registro e um arquivo NA CÓPIA
          e confirma que a verificação acusa a diferença;
-      7. remove o contêiner e a rede descartáveis.
+      7. remove o contêiner, a rede e a pasta temporária.
 
-    O resultado é gravado em restauracao_<data>.txt dentro da pasta da cópia.
+    Impressão digital: no formato 2, a ordenação não depende do servidor. Cópias
+    antigas (formato 1) foram calculadas com a collation padrão do servidor de
+    origem; elas são conferidas com cada ordenação candidata e só passam se
+    TODAS as linhas corresponderem com uma delas.
+
+    A cópia é apenas lida. O resultado é gravado em backups\restauracoes\.
     Código de saída 0 = restauração comprovada; 1 = alguma verificação falhou.
 
 .PARAMETER Backup
@@ -36,6 +44,7 @@ $rede = $nome
 $senha = [guid]::NewGuid().ToString('N')   # só existe no contêiner descartável
 $falhas = New-Object System.Collections.Generic.List[string]
 $relatorio = New-Object System.Collections.Generic.List[string]
+$temporaria = $null   # cópia temporária do código, se for preciso usar um commit anterior
 
 function Registrar {
     param([bool]$Ok, [string]$Texto)
@@ -89,10 +98,15 @@ try {
     $relatorio.Add("copia=$Backup (criada em $($manifesto['criado_em']))")
     Write-Host "Cópia: $Backup"
 
+    # Cópia completa (backup.ps1: banco + documentos) ou só do banco (backup_supabase.ps1).
+    $temDocumentos = $manifesto.ContainsKey('sha256_documentos')
+    if ($manifesto['origem']) { $relatorio.Add("origem=$($manifesto['origem']) ($($manifesto['descricao']))") }
+
     # 1. Integridade dos arquivos da cópia.
-    $arquivosCopia = [ordered]@{
-        'banco.dump' = 'sha256_banco'; 'documentos.tar.gz' = 'sha256_documentos'
-        'documentos.sha256' = 'sha256_lista_documentos'; 'impressao_origem.txt' = 'sha256_impressao'
+    $arquivosCopia = [ordered]@{ 'banco.dump' = 'sha256_banco'; 'impressao_origem.txt' = 'sha256_impressao' }
+    if ($temDocumentos) {
+        $arquivosCopia['documentos.tar.gz'] = 'sha256_documentos'
+        $arquivosCopia['documentos.sha256'] = 'sha256_lista_documentos'
     }
     foreach ($arquivo in $arquivosCopia.Keys) {
         $esperado = $manifesto[$arquivosCopia[$arquivo]]
@@ -120,7 +134,7 @@ try {
 
     # 3. Restauração.
     Invoke-Docker exec $nome mkdir -p /restauracao | Out-Null
-    foreach ($arquivo in 'banco.dump', 'documentos.tar.gz') {
+    foreach ($arquivo in @('banco.dump') + @(if ($temDocumentos) { 'documentos.tar.gz' })) {
         Invoke-Docker cp (Join-Path $Backup $arquivo) "${nome}:/restauracao/$arquivo" | Out-Null
     }
     foreach ($arquivo in 'verificar_banco.sql', 'restaurar_teste.sh') {
@@ -129,11 +143,33 @@ try {
     $relogio = [System.Diagnostics.Stopwatch]::StartNew()
     Invoke-Docker exec $nome sh /restauracao/restaurar_teste.sh restaurar | Out-Null
     $relogio.Stop()
-    Registrar $true ("pg_restore e extração dos documentos sem erros ({0:N1} s)" -f $relogio.Elapsed.TotalSeconds)
+    Registrar $true ("pg_restore{0} sem erros ({1:N1} s)" -f $(if ($temDocumentos) { ' e extração dos documentos' } else { '' }), $relogio.Elapsed.TotalSeconds)
 
     # 4. Comparação com a origem.
     $origem = @(Read-Linhas (Join-Path $Backup 'impressao_origem.txt'))
-    $restaurada = @(Ler-NoConteiner 'impressao_restaurada.txt')
+    $ordenacaoLegada = $null
+    if ($origem -contains 'formato|impressao|2|ordenacao=C') {
+        $restaurada = @(Ler-NoConteiner 'impressao_restaurada.txt')
+    } else {
+        # Formato 1: ordenação de texto dependente da collation do servidor de origem
+        # (padrão do PostgreSQL local, ou C no Supabase). Exige correspondência total.
+        $melhor = $null
+        foreach ($candidata in 'default', 'C') {
+            Invoke-Docker exec $nome sh /restauracao/restaurar_teste.sh legado $candidata | Out-Null
+            $linhas = @(Ler-NoConteiner 'impressao_legado.txt')
+            $quantas = @(Comparar-Impressoes $origem $linhas).Count
+            if ($null -eq $melhor -or $quantas -lt $melhor.diferencas) {
+                $melhor = @{ ordenacao = $candidata; linhas = $linhas; diferencas = $quantas }
+            }
+            if ($quantas -eq 0) { break }
+        }
+        $ordenacaoLegada = $melhor.ordenacao
+        $restaurada = $melhor.linhas
+        $texto = "[INFO]  Impressão de origem no formato 1 (ordenação dependente do servidor): conferida com ordenação '$ordenacaoLegada'" +
+            $(if ($melhor.diferencas -eq 0) { ' (todas as linhas correspondem).' } else { " (nenhuma ordenação candidata corresponde a todas as linhas)." })
+        $relatorio.Add($texto)
+        Write-Host $texto
+    }
     $diferentes = @(Comparar-Impressoes $origem $restaurada)
 
     $tabOrigem = @($origem | Where-Object { $_ -like 'tabela|*' })
@@ -156,24 +192,70 @@ try {
         "Relacionamentos: $($orfaos.Count) chaves estrangeiras sem registros órfãos"
 
     # Documentos.
-    $docsOrigem = @(Read-Linhas (Join-Path $Backup 'documentos.sha256'))
-    $docsRestaurados = @(Ler-NoConteiner 'documentos_restaurada.sha256')
-    $docsDif = @(Get-Diferencas $docsOrigem $docsRestaurados)
-    Registrar ($docsDif.Count -eq 0) "Documentos: $($docsRestaurados.Count)/$($docsOrigem.Count) arquivos restaurados com SHA-256 idêntico"
-    $versoes = @(Ler-NoConteiner 'versoes_restaurada.txt')
-    $versoesRuins = @($versoes | Where-Object { $_ -ne 'ok' })
-    Registrar ($versoesRuins.Count -eq 0) `
-        "Versões de documento: $($versoes.Count - $versoesRuins.Count)/$($versoes.Count) com arquivo presente e tamanho igual ao registrado"
+    $docsOrigem = @()
+    if ($temDocumentos) {
+        $docsOrigem = @(Read-Linhas (Join-Path $Backup 'documentos.sha256'))
+        $docsRestaurados = @(Ler-NoConteiner 'documentos_restaurada.sha256')
+        $docsDif = @(Get-Diferencas $docsOrigem $docsRestaurados)
+        Registrar ($docsDif.Count -eq 0) "Documentos: $($docsRestaurados.Count)/$($docsOrigem.Count) arquivos restaurados com SHA-256 idêntico"
+        $versoes = @(Ler-NoConteiner 'versoes_restaurada.txt')
+        $versoesRuins = @($versoes | Where-Object { $_ -ne 'ok' })
+        Registrar ($versoesRuins.Count -eq 0) `
+            "Versões de documento: $($versoes.Count - $versoesRuins.Count)/$($versoes.Count) com arquivo presente e tamanho igual ao registrado"
+    } else {
+        $relatorio.Add('[INFO]  Cópia só do banco: os arquivos dos documentos têm backup próprio (exportar_documentos).')
+        Write-Host '[INFO]  Cópia só do banco: os arquivos dos documentos têm backup próprio (exportar_documentos).'
+    }
 
-    # 5. A aplicação lê o banco restaurado (contêiner temporário, só na rede descartável).
+    # 5. A aplicação lê o banco restaurado (contêiner temporário, só na rede descartável),
+    #    com a versão do código compatível com o esquema da cópia. Nenhuma migração é aplicada.
+    $rotulos = @(Get-ChildItem -LiteralPath (Join-Path $Raiz 'apps') -Directory | ForEach-Object Name)
+    $aplicadas = @(Invoke-Docker exec $nome psql -U postgres -d restaurado -X -At -c 'SELECT app || chr(46) || name FROM django_migrations' |
+        Where-Object { $_ -and $rotulos -contains ($_ -split '\.')[0] } | Sort-Object)
+    $padrao = '^apps/([a-z_]+)/migrations/([0-9][^/]*)\.py$'
+    $doCodigoAtual = @(Get-ChildItem -Path (Join-Path $Raiz 'apps\*\migrations\0*.py') |
+        ForEach-Object { "$($_.Directory.Parent.Name).$($_.BaseName)" } | Sort-Object)
+    $codigo = $null; $descricaoCodigo = $null
+    if (($doCodigoAtual -join ',') -eq ($aplicadas -join ',')) {
+        $codigo = $Raiz; $descricaoCodigo = 'código atual'
+    } else {
+        foreach ($commit in @(& git rev-list HEAD)) {
+            $doCommit = @(& git ls-tree -r --name-only $commit -- apps | Where-Object { $_ -match $padrao } |
+                ForEach-Object { $_ -replace $padrao, '$1.$2' } | Sort-Object)
+            if (($doCommit -join ',') -eq ($aplicadas -join ',')) {
+                $temporaria = Join-Path ([System.IO.Path]::GetTempPath()) "jusgestor-codigo-$carimbo"
+                New-Item -ItemType Directory -Path $temporaria | Out-Null
+                & git archive --format=zip -o (Join-Path $temporaria 'codigo.zip') $commit
+                Expand-Archive -LiteralPath (Join-Path $temporaria 'codigo.zip') -DestinationPath (Join-Path $temporaria 'codigo')
+                $codigo = Join-Path $temporaria 'codigo'
+                $descricaoCodigo = "commit $($commit.Substring(0, 7))"
+                break
+            }
+        }
+    }
+    $faltantes = @($doCodigoAtual | Where-Object { $aplicadas -notcontains $_ })
+    $texto = "[INFO]  Migrações do projeto na cópia: $($aplicadas -join ', ')" +
+        $(if ($faltantes) { ". O código atual tem $($faltantes.Count) a mais, ainda não aplicadas na origem: $($faltantes -join ', ')." } else { '.' })
+    $relatorio.Add($texto); Write-Host $texto
+    Registrar ($null -ne $codigo) ("Versão do código compatível com o esquema da cópia: " +
+        $(if ($codigo) { $descricaoCodigo } else { 'nenhuma (as migrações da cópia não correspondem a nenhum commit)' }))
+
+    # Rede interna (sem internet) e variáveis do Supabase vazias: impossível alcançar o banco remoto.
     $django = @('run', '--rm', '--network', $rede, '--env-file', (Join-Path $Raiz '.env'),
+        '-e', 'SUPABASE_DB_HOST=', '-e', 'SUPABASE_DB_USER=', '-e', 'SUPABASE_DB_PASSWORD=',
+        '-e', 'SUPABASE_STORAGE_ACCESS_KEY_ID=', '-e', 'SUPABASE_STORAGE_SECRET_ACCESS_KEY=',
+        '-e', 'DOCUMENTOS_ARMAZENAMENTO=local',
         '-e', 'DB_ALVO=local', '-e', "POSTGRES_HOST=$nome", '-e', 'POSTGRES_PORT=5432',
         '-e', 'POSTGRES_DB=restaurado', '-e', 'POSTGRES_USER=postgres', '-e', "POSTGRES_PASSWORD=$senha",
-        '-v', "${Raiz}:/app:ro", $imagemWeb)
-    $verificacao = @(Invoke-Docker @django python manage.py verificar_banco)
-    $pendentes = @($verificacao | Where-Object { $_ -like 'Migra*pendentes: 0' })
-    Registrar ($pendentes.Count -eq 1) 'Django conecta ao banco restaurado: verificar_banco OK, 0 migrações pendentes'
-    $contagemOrm = @(Invoke-Docker @django python /app/scripts/backup/contar_orm.py)
+        '-v', "${codigo}:/app:ro", '-v', "$(Join-Path $PSScriptRoot 'contar_orm.py'):/verificacao/contar_orm.py:ro",
+        $imagemWeb)
+    if (-not $codigo) { throw 'Leitura pelo Django não testada: nenhuma versão do código corresponde ao esquema da cópia.' }
+    # showmigrations só lê django_migrations: "[ ]" indica migração não aplicada.
+    $plano = @(Invoke-Docker @django python manage.py showmigrations --plan)
+    $naoAplicadas = @($plano | Where-Object { $_ -match '^\[ \]' })
+    Registrar ($plano.Count -gt 0 -and $naoAplicadas.Count -eq 0) `
+        "Django ($descricaoCodigo) conecta ao banco restaurado: $(@($plano | Where-Object { $_ -match '^\[X\]' }).Count) migrações aplicadas, $($naoAplicadas.Count) pendentes"
+    $contagemOrm = @(Invoke-Docker @django python /verificacao/contar_orm.py)
     $esperadoOrm = @{}
     foreach ($t in $tabOrigem) { $esperadoOrm[(Get-Campo $t 1)] = Get-Campo $t 2 }
     $ormDif = @($contagemOrm | Where-Object {
@@ -184,7 +266,8 @@ try {
         "ORM do Django: $($contagemOrm.Count) modelos com as mesmas contagens da origem$(if ($ormDif) { ' - diferem: ' + ($ormDif -join ', ') })"
 
     # 6. Controle negativo: a verificação precisa acusar uma alteração proposital.
-    Invoke-Docker exec $nome sh /restauracao/restaurar_teste.sh controle | Out-Null
+    $argumentosControle = @('exec', $nome, 'sh', '/restauracao/restaurar_teste.sh', 'controle') + @(if ($ordenacaoLegada) { $ordenacaoLegada })
+    Invoke-Docker @argumentosControle | Out-Null
     $controle = @(Comparar-Impressoes $origem @(Ler-NoConteiner 'impressao_controle.txt'))
     Registrar (($controle -join ',') -eq 'tabela|django_migrations') `
         "Controle negativo (banco): alteração proposital de 1 registro detectada ($($controle -join ', '))"
@@ -211,13 +294,18 @@ finally {
     }
     if (@(& docker network ls -q --filter "name=^$rede$")) { & docker network rm $rede | Out-Null }
     $restos = @($restos) + @(& docker network ls -q --filter "name=^$rede$" | Where-Object { $_ })
+    if ($temporaria -and (Test-Path -LiteralPath $temporaria)) { Remove-Item -LiteralPath $temporaria -Recurse -Force }
     Registrar ($restos.Count -eq 0) 'Instância e rede descartáveis removidas'
     Pop-Location
 }
 
+# O relatório fica fora da pasta da cópia: a cópia é apenas lida.
 $saidaRelatorio = $null
 if ($Backup -and (Test-Path -LiteralPath $Backup)) {
-    $saidaRelatorio = Join-Path $Backup "restauracao_$carimbo.txt"
+    $pastaRelatorios = Join-Path $Raiz 'backups\restauracoes'
+    if (-not (Test-Path -LiteralPath $pastaRelatorios)) { New-Item -ItemType Directory -Path $pastaRelatorios | Out-Null }
+    $nomeCopia = ((Resolve-Path -LiteralPath $Backup).Path.Substring($Raiz.Length).Trim('\') -replace '^backups\\', '' -replace '[\\/]', '-')
+    $saidaRelatorio = Join-Path $pastaRelatorios "$nomeCopia`_$carimbo.txt"
     $relatorio.Add($(if ($falhas.Count) { "RESULTADO=FALHA ($($falhas.Count))" } else { 'RESULTADO=OK' }))
     Write-Utf8 $saidaRelatorio $relatorio.ToArray()
 }

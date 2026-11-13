@@ -68,14 +68,29 @@ serviço `db`. Nesse contêiner, restaura e verifica:
    nenhum registro órfão em nenhuma chave estrangeira;
 5. o SHA-256 de cada documento e a existência e o tamanho do arquivo de cada
    versão registrada no banco;
-6. a leitura pelo Django: `verificar_banco` sem migrações pendentes e as
-   contagens pelo ORM iguais às da origem;
+6. a leitura pelo Django, com a **versão do código compatível com o esquema
+   da cópia**: o código atual, se as migrações do projeto registradas na cópia
+   forem exatamente as do código, ou o commit mais recente cujas migrações
+   correspondam (extraído do Git para uma pasta temporária). Exige 0 migrações
+   pendentes (`showmigrations`) e contagens pelo ORM iguais às da origem.
+   **Nenhuma migração é aplicada** no banco restaurado. O relatório informa as
+   migrações do código atual que ainda não estão na cópia;
 7. um **controle negativo**: altera de propósito um registro e um arquivo na
    cópia e exige que a verificação acuse a diferença.
 
-No fim, o contêiner, a rede e o volume são removidos. O relatório fica em
-`restauracao_<data>.txt`, dentro da pasta da cópia. O código de saída é 0
-quando a restauração foi comprovada e 1 quando houve falha.
+No fim, o contêiner, a rede, o volume e a pasta temporária são removidos. A
+cópia é apenas lida; o relatório fica em `backups\restauracoes\`. O código de
+saída é 0 quando a restauração foi comprovada e 1 quando houve falha.
+
+Observação sobre a ordenação (impressão digital): os hashes concatenam as
+linhas em ordem, e a ordem de textos depende da collation do banco. O Supabase
+usa uma collation da família C e o PostgreSQL do Docker usa `en_US.utf8`, que
+ignora pontuação (`(10,` vem antes de `(2,`): o mesmo conteúdo gerava hashes
+diferentes em tabelas com 10 ou mais linhas. Desde o formato 2 (linha
+`formato|impressao|2|ordenacao=C`), toda ordenação de texto usa `COLLATE "C"`
+e a impressão é idêntica em qualquer servidor. Cópias antigas (formato 1) são
+conferidas com a ordenação padrão do servidor local e com `C`, e só passam se
+**todas** as linhas corresponderem com uma delas.
 
 Observação sobre as restrições: ao recriar um `CHECK (campo IN (...))` de
 coluna `varchar`, o PostgreSQL devolve a regra com as conversões de tipo em
@@ -175,6 +190,62 @@ prefixo isolado: exportação, verificação, restauração com chaves originais
 proteção contra sobrescrita, sobrescrita autorizada e remoção dos 6 arquivos
 criados pelo teste. Nenhum documento real foi listado, lido ou alterado.
 
+## 5. Banco do sistema publicado (PostgreSQL do Supabase)
+
+`scripts\backup\backup_supabase.ps1` executa o `pg_dump` num contêiner
+PostgreSQL descartável (mesma imagem do serviço `db`), com as variáveis
+`SUPABASE_DB_*` do `.env` lidas **dentro do contêiner**: as credenciais não
+passam pela linha de comando nem aparecem na saída.
+
+| Proteção | Como |
+|---|---|
+| Confirmação explícita | `-Projeto <referência>` precisa ser igual à referência em `SUPABASE_DB_USER` (`postgres.<referência>`) |
+| Destino certo | `SUPABASE_DB_HOST` precisa ser `*.supabase.com` ou `*.supabase.co` |
+| Conexão criptografada | `SUPABASE_DB_SSLMODE` precisa ser `require`, `verify-ca` ou `verify-full` (com certificado em `certs\`) |
+| Somente leitura | impressão digital em `BEGIN ... READ ONLY`; `pg_dump` usa transação `REPEATABLE READ, READ ONLY`; nenhum comando de escrita |
+| Cópia consistente | impressão digital antes e depois do dump (até 3 tentativas); o dump só é mantido se forem iguais |
+| Escopo | somente o esquema `public` (tabelas do sistema), sem dono e sem privilégios (`--no-owner --no-privileges`) |
+| Não sobrescrever | cada execução cria `backups\supabase\AAAAMMDD-HHMMSS\`; pasta existente é recusada; cópia incompleta é apagada |
+| Privacidade | `backups\` no `.gitignore` e no `.dockerignore`; pasta restrita ao usuário atual (`icacls`); segredos mascarados na saída |
+| Restauração | **somente** no PostgreSQL local descartável do `testar_restauracao.ps1`, em rede interna sem internet e com as variáveis do Supabase vazias |
+
+Conteúdo da cópia: `banco.dump`, `impressao_origem.txt` e `manifesto.txt`
+(origem, versões do servidor e do `pg_dump`, tabelas, registros e SHA-256).
+Os arquivos dos documentos **não** estão no banco: use `exportar_documentos`
+(seção 4) logo em seguida, para que banco e arquivos correspondam.
+
+### Validar a rotina sem acessar o Supabase
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\backup\testar_rotina_backup_supabase.ps1
+```
+
+Executa as recusas de segurança, um **ensaio** do mesmo procedimento contra o
+PostgreSQL local (`backup_supabase.ps1 -Ensaio`), a restauração na instância
+descartável, a verificação de não sobrescrita e a recusa de uma cópia
+adulterada. Validado em 12/11/2026.
+
+### Primeiro backup real (aguarda autorização)
+
+```powershell
+# 1. banco (somente leitura no Supabase)
+powershell -ExecutionPolicy Bypass -File scripts\backup\backup_supabase.ps1 -Projeto <referencia-do-projeto>
+# 2. restaurar e conferir num PostgreSQL local descartável
+powershell -ExecutionPolicy Bypass -File scripts\backup\testar_restauracao.ps1 -Backup backups\supabase\<pasta-criada>
+# 3. documentos do Storage (seção 4)
+docker compose run --rm web python manage.py exportar_documentos --remoto --confirmar jusgestor-documentos
+docker compose run --rm web python manage.py verificar_backup_documentos backups/documentos/<pasta-criada>
+```
+
+Depois, copie as duas pastas para outro dispositivo.
+
+Restaurar **no Supabase** não faz parte desta rotina: recuperar o sistema
+publicado (por exemplo, num novo projeto Supabase) é um procedimento à parte,
+a ser decidido e autorizado caso a caso. Nota técnica para esse caso: o dump
+de um esquema traz `CREATE SCHEMA public`; restaure com uma lista sem esse item
+(`pg_restore -l banco.dump | grep -v ' SCHEMA - public ' > itens.lista` e
+`pg_restore -L itens.lista ...`), como faz `restaurar_teste.sh`.
+
 ## O que o RNF07 ainda depende de você
 
 | Parte do RNF07 | Situação |
@@ -182,7 +253,7 @@ criados pelo teste. Nenhum documento real foi listado, lido ou alterado.
 | Preservar integridade no banco | Restrições, FKs com `PROTECT` e transações no sistema; validadas também na cópia restaurada |
 | Copiar banco **e documentos** (local) | `backup.ps1` |
 | Copiar **documentos** do sistema publicado | `exportar_documentos --remoto` (pronto e testado; cópia real aguarda autorização) |
-| Copiar o **banco** do sistema publicado (Supabase) | **Pendente**: rotina de `pg_dump` do Supabase ainda não criada |
-| Testar restauração | `testar_restauracao.ps1` (local) e `testar_backup_documentos --remoto` (arquivos) |
+| Copiar o **banco** do sistema publicado (Supabase) | `backup_supabase.ps1` (pronto e validado por ensaio local; cópia real aguarda autorização) |
+| Testar restauração | `testar_restauracao.ps1` (cópias local e do Supabase), `testar_rotina_backup_supabase.ps1` e `testar_backup_documentos --remoto` (arquivos) |
 | Copiar **após sessões com alterações e antes de atualizações** | Rotina **manual**. Não há agendamento automático |
 | Manter **cópia independente** | **Manual**: levar as pastas para outro dispositivo |
