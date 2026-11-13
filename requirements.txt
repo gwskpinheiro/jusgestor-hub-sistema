@@ -7,3 +7,14 @@ sqlparse==0.6.1
 gunicorn==23.0.0
 packaging==26.3
 whitenoise==6.12.0
+
+# Armazenamento de documentos no Supabase Storage (API S3), usado somente
+# com DOCUMENTOS_ARMAZENAMENTO=supabase. Ver config/armazenamento.py.
+django-storages[s3]==1.14.6
+boto3==1.44.2
+botocore==1.44.2
+s3transfer==0.19.3
+jmespath==1.1.0
+python-dateutil==2.9.0.post0
+six==1.17.0
+urllib3==2.8.0

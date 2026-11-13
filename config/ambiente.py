@@ -9,6 +9,7 @@ plataforma.
 """
 from django.core.exceptions import ImproperlyConfigured
 
+from config.armazenamento import ARMAZENAMENTO_SUPABASE
 from config.banco import ALVO_SUPABASE
 
 
@@ -80,7 +81,7 @@ def config_https(amb):
     }
 
 
-def validar_producao(amb, debug, https, alvo_banco):
+def validar_producao(amb, debug, https, alvo_banco, *, alvo_documentos):
     """No Render, recusa iniciar com configuração insegura."""
     if not no_render(amb):
         return
@@ -91,5 +92,8 @@ def validar_producao(amb, debug, https, alvo_banco):
         problemas.append("DJANGO_HTTPS deve ser 1")
     if alvo_banco != ALVO_SUPABASE:
         problemas.append("DB_ALVO deve ser supabase")
+    # O disco do Render é temporário: documentos gravados nele somem a cada deploy.
+    if alvo_documentos != ARMAZENAMENTO_SUPABASE:
+        problemas.append("DOCUMENTOS_ARMAZENAMENTO deve ser supabase (o disco do Render é temporário)")
     if problemas:
         raise ImproperlyConfigured("Configuração de produção inválida: " + "; ".join(problemas) + ".")

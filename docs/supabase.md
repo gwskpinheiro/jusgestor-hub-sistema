@@ -145,5 +145,39 @@ não ficam acessíveis pela API.
 
 - Migrações aplicadas no Supabase em 08/11/2026, com a Data API isolada.
 - Administrador criado no Supabase e login validado em 08/11/2026, incluindo troca obrigatória da senha temporária.
-- Pendente: publicar o Django: servidor de produção, `DEBUG=0`, `ALLOWED_HOSTS`, HTTPS e
-  armazenamento dos documentos.
+- Pendente: publicar o Django (servidor de produção, `DEBUG=0`, `ALLOWED_HOSTS` e HTTPS já
+  preparados) e configurar o Storage dos documentos (seção 7).
+
+## 7. Storage dos documentos (preparado no código, ainda não configurado)
+
+O código já grava e lê os documentos por uma camada de armazenamento
+(`config/armazenamento.py` e `apps/documentos/armazenamento.py`):
+
+- `DOCUMENTOS_ARMAZENAMENTO=local` (padrão): pasta `DOCUMENTOS_ROOT`,
+  usada no desenvolvimento e **sempre** nos testes;
+- `DOCUMENTOS_ARMAZENAMENTO=supabase`: bucket privado do Supabase Storage
+  pela API compatível com S3 (`django-storages` + `boto3`), obrigatório no
+  Render.
+
+O banco guarda a mesma chave nos dois casos (`<documento>/<uuid>.<ext>`); no
+bucket, os arquivos ficam sob `SUPABASE_STORAGE_PREFIXO` (padrão
+`documentos/`). Os arquivos nunca são servidos por link direto ao bucket:
+download e "Visualizar" passam pelas views do Django, que verificam a
+permissão do usuário.
+
+Para ativar (etapa futura, sem mudança de código):
+
+1. **Bucket privado:** Storage > New bucket, com "Public bucket" **desligado**,
+   limite de tamanho de 10 MB e tipos permitidos `application/pdf`,
+   `application/vnd.openxmlformats-officedocument.wordprocessingml.document`,
+   `image/png` e `image/jpeg`. Não crie políticas (RLS) para `anon` ou
+   `authenticated`.
+2. **Acesso S3:** Storage > Settings > S3 Connection: copie o endpoint e a
+   região e crie um par de chaves de acesso. As chaves dão acesso total ao
+   Storage do projeto e ignoram as políticas: guarde-as somente no `.env`
+   local e nas variáveis do Render.
+3. **Variáveis:** preencha `SUPABASE_STORAGE_*` (ver `.env.example`).
+4. **Teste de conexão:** gravar, ler e apagar um arquivo de teste no bucket,
+   com autorização prévia (comando ainda a criar).
+5. **Backup:** o backup do banco do Supabase **não inclui** os arquivos do
+   Storage; a cópia dos documentos precisa de rotina própria (ainda a criar).

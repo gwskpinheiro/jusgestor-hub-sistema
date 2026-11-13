@@ -1,16 +1,15 @@
 """Gerenciar documentos (RF06; RN04, RN07, RN08)."""
 from django.contrib import messages
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.core.acesso import documentos_visiveis, ids_clientes_visiveis
 from apps.core.utils import paginar
 
-from .armazenamento import caminho_absoluto, gravar_versao
+from .armazenamento import ArmazenamentoIndisponivel, ArquivoIndisponivel, abrir_versao, gravar_versao
 from .forms import DocumentoEdicaoForm, DocumentoForm, NovaVersaoForm
 from .models import TIPOS_PERMITIDOS, VersaoDocumento
 
@@ -30,26 +29,35 @@ def novo(request):
     inicial = {k: request.GET[k] for k in ("cliente", "processo") if request.GET.get(k, "").isdigit()}
     form = DocumentoForm(request.POST or None, request.FILES or None, usuario=request.user, initial=inicial)
     if request.method == "POST" and form.is_valid():
-        with transaction.atomic():
-            documento = form.save()
-            gravar_versao(documento, form.cleaned_data["arquivo"], request.user)
-        messages.success(request, "Documento enviado.")
-        return redirect(documento)
+        try:
+            with transaction.atomic():
+                documento = form.save()
+                gravar_versao(documento, form.cleaned_data["arquivo"], request.user)
+        except ArmazenamentoIndisponivel as erro:
+            # Nada é registrado (o documento é desfeito junto com a transação).
+            form.add_error("arquivo", str(erro))
+        else:
+            messages.success(request, "Documento enviado.")
+            return redirect(documento)
     return render(request, "core/form_generico.html", {
         "form": form, "titulo": "Enviar documento", "voltar": "documentos:lista",
     })
+
+
+def _contexto_detalhe(request, documento, form_versao):
+    return {
+        "documento": documento,
+        "versoes": documento.versoes.select_related("autor"),
+        "form_versao": form_versao,
+        "pode_ver_cliente": bool(ids_clientes_visiveis(request.user, [documento.cliente_id])),
+    }
 
 
 def detalhe(request, pk):
     documento = get_object_or_404(
         documentos_visiveis(request.user).select_related("cliente", "processo"), pk=pk
     )
-    return render(request, "documentos/detalhe.html", {
-        "documento": documento,
-        "versoes": documento.versoes.select_related("autor"),
-        "form_versao": NovaVersaoForm(),
-        "pode_ver_cliente": bool(ids_clientes_visiveis(request.user, [documento.cliente_id])),
-    })
+    return render(request, "documentos/detalhe.html", _contexto_detalhe(request, documento, NovaVersaoForm()))
 
 
 def editar(request, pk):
@@ -69,12 +77,14 @@ def nova_versao(request, pk):
     documento = get_object_or_404(documentos_visiveis(request.user), pk=pk)
     form = NovaVersaoForm(request.POST, request.FILES)
     if form.is_valid():
-        versao = gravar_versao(documento, form.cleaned_data["arquivo"], request.user)
+        try:
+            versao = gravar_versao(documento, form.cleaned_data["arquivo"], request.user)
+        except ArmazenamentoIndisponivel as erro:
+            form.add_error("arquivo", str(erro))
+            return render(request, "documentos/detalhe.html", _contexto_detalhe(request, documento, form), status=503)
         messages.success(request, f"Versão {versao.numero_versao} enviada. As versões anteriores foram mantidas.")
         return redirect(documento)
-    return render(request, "documentos/detalhe.html", {
-        "documento": documento, "versoes": documento.versoes.select_related("autor"), "form_versao": form,
-    }, status=400)
+    return render(request, "documentos/detalhe.html", _contexto_detalhe(request, documento, form), status=400)
 
 
 def _versao_autorizada(request, pk):
@@ -86,11 +96,16 @@ def _versao_autorizada(request, pk):
 
 
 def _responder_arquivo(versao, anexo):
+    """Entrega o arquivo pelo Django (nunca por link direto ao armazenamento)."""
     try:
-        caminho = caminho_absoluto(versao)
-        arquivo = open(caminho, "rb")
-    except (OSError, ValidationError):
+        arquivo = abrir_versao(versao)
+    except ArquivoIndisponivel:
         raise Http404("Arquivo não encontrado.")
+    except ArmazenamentoIndisponivel as erro:
+        resposta = HttpResponse(str(erro), status=503, content_type="text/plain; charset=utf-8")
+        resposta["Retry-After"] = "30"
+        resposta["Cache-Control"] = "no-store"
+        return resposta
     resposta = FileResponse(
         arquivo, as_attachment=anexo, filename=versao.nome_arquivo,
         content_type=TIPOS_PERMITIDOS.get(versao.extensao, "application/octet-stream"),

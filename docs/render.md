@@ -53,6 +53,13 @@ Cadastre os valores **somente no painel do Render**. Nada disso vai para o Git.
 | `SUPABASE_DB_USER` | `postgres.<referência-do-projeto>` | |
 | `SUPABASE_DB_PASSWORD` | senha do banco | |
 | `SUPABASE_DB_SSLMODE` | `require` (ou `verify-full`, ver abaixo) | |
+| `DOCUMENTOS_ARMAZENAMENTO` | `supabase` | Obrigatório: o disco do Render é temporário |
+| `SUPABASE_STORAGE_ENDPOINT` | endpoint S3 do Storage | Ver [supabase.md, seção 7](supabase.md) |
+| `SUPABASE_STORAGE_REGION` | `sa-east-1` | Região do projeto |
+| `SUPABASE_STORAGE_BUCKET` | nome do bucket **privado** | |
+| `SUPABASE_STORAGE_PREFIXO` | opcional (padrão `documentos`) | Pasta dentro do bucket |
+| `SUPABASE_STORAGE_ACCESS_KEY_ID` | chave S3 | Segredo: acesso total ao Storage |
+| `SUPABASE_STORAGE_SECRET_ACCESS_KEY` | segredo S3 | Segredo: acesso total ao Storage |
 | `DJANGO_ALLOWED_HOSTS` | opcional | Domínios próprios, separados por vírgula |
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | opcional | Ex.: `https://meu-dominio.com.br` |
 | `DJANGO_HSTS_SECONDS` | opcional (padrão `3600`) | Ampliar só depois de validar o HTTPS |
@@ -80,8 +87,10 @@ docker run --rm python:3.12-slim python -c "import secrets; print(secrets.token_
 ## 3. Proteções de produção
 
 Quando `RENDER=true`, a aplicação **se recusa a iniciar** se `DJANGO_DEBUG`
-não for `0`, se `DJANGO_HTTPS` não for `1` ou se `DB_ALVO` não for `supabase`
-(ver `config/ambiente.py`).
+não for `0`, se `DJANGO_HTTPS` não for `1`, se `DB_ALVO` não for `supabase`
+ou se `DOCUMENTOS_ARMAZENAMENTO` não for `supabase` (ver `config/ambiente.py`).
+A última regra impede gravar documentos no disco temporário do Render, onde
+eles se perderiam no próximo deploy ou reinício.
 
 Com `DJANGO_HTTPS=1`:
 
@@ -102,11 +111,14 @@ alteram o banco.
 ```powershell
 docker compose build web
 docker run --rm --env-file .env -e RENDER=true -e RENDER_EXTERNAL_HOSTNAME=jusgestor-teste.onrender.com `
-  -e DJANGO_DEBUG=0 -e DJANGO_HTTPS=1 -e DB_ALVO=supabase -e DJANGO_ALLOWED_HOSTS= -e PORT=10000 `
+  -e DJANGO_DEBUG=0 -e DJANGO_HTTPS=1 -e DB_ALVO=supabase -e DOCUMENTOS_ARMAZENAMENTO=supabase `
+  -e DJANGO_ALLOWED_HOSTS= -e PORT=10000 `
   jusgestor-hub-web sh -c "python manage.py collectstatic --noinput && python manage.py check --deploy"
 ```
 
 Resultado esperado: `System check identified no issues (2 silenced).`
+A simulação exige as variáveis `SUPABASE_STORAGE_*` preenchidas no `.env`;
+criar a configuração do armazenamento não abre conexão com o Storage.
 
 ## 5. Depois do primeiro deploy
 
@@ -117,11 +129,11 @@ Resultado esperado: `System check identified no issues (2 silenced).`
 
 ## 6. Pendências e limitações
 
-- **Documentos (RN04, RF06):** o sistema de arquivos do Render é temporário,
-  e os arquivos somem a cada deploy ou reinício. Antes de implementar o
-  módulo de documentos, é preciso escolher um armazenamento persistente
-  privado (por exemplo, Render Disk em plano pago ou Supabase Storage com
-  bucket privado). Isso ainda não está implementado.
+- **Documentos (RN04, RF06):** o sistema de arquivos do Render é temporário.
+  O código já grava e lê os documentos por uma camada de armazenamento
+  (`DOCUMENTOS_ARMAZENAMENTO`), com suporte ao Supabase Storage via S3, e
+  o Render é obrigado a usá-lo. Falta configurar e testar o bucket privado
+  (ver [supabase.md, seção 7](supabase.md)) e definir o backup dos arquivos.
 - **Plano gratuito:** o serviço "dorme" após um período sem acesso, e o
   primeiro acesso seguinte demora mais.
 - **Latência:** o Render não tem região no Brasil, e cada consulta vai dos

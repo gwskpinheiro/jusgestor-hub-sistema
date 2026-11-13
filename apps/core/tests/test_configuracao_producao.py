@@ -64,17 +64,24 @@ class HttpsTests(SimpleTestCase):
 
 class ValidacaoProducaoTests(SimpleTestCase):
     def test_fora_do_render_nao_exige_nada(self):
-        ambiente.validar_producao({}, debug=True, https=False, alvo_banco="local")
+        ambiente.validar_producao({}, debug=True, https=False, alvo_banco="local", alvo_documentos="local")
 
     def test_render_com_configuracao_correta(self):
-        ambiente.validar_producao(RENDER, debug=False, https=True, alvo_banco="supabase")
+        ambiente.validar_producao(RENDER, debug=False, https=True, alvo_banco="supabase", alvo_documentos="supabase")
 
     def test_render_recusa_configuracao_insegura(self):
+        correto = {"debug": False, "https": True, "alvo_banco": "supabase", "alvo_documentos": "supabase"}
         casos = [
-            {"debug": True, "https": True, "alvo_banco": "supabase"},
-            {"debug": False, "https": False, "alvo_banco": "supabase"},
-            {"debug": False, "https": True, "alvo_banco": "local"},
+            {**correto, "debug": True},
+            {**correto, "https": False},
+            {**correto, "alvo_banco": "local"},
+            # O disco do Render é temporário: documentos locais seriam perdidos.
+            {**correto, "alvo_documentos": "local"},
         ]
         for caso in casos:
             with self.subTest(**caso), self.assertRaises(ImproperlyConfigured):
                 ambiente.validar_producao(RENDER, **caso)
+
+    def test_mensagem_explica_o_armazenamento_temporario(self):
+        with self.assertRaisesMessage(ImproperlyConfigured, "DOCUMENTOS_ARMAZENAMENTO deve ser supabase"):
+            ambiente.validar_producao(RENDER, debug=False, https=True, alvo_banco="supabase", alvo_documentos="local")

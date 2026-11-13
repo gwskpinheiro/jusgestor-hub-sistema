@@ -1,22 +1,27 @@
 """Validação e gravação privada dos arquivos de documentos (RN04, RF06).
 
 - Extensão, tamanho e conteúdo (assinatura do arquivo) são verificados.
-- O arquivo é gravado em DOCUMENTOS_ROOT, fora dos diretórios públicos, com um
-  nome gerado pelo sistema; o nome original é guardado apenas para o download.
-- O acesso ao arquivo só ocorre pela view de download, que verifica a
-  permissão do usuário sobre o documento.
+- O arquivo é gravado no armazenamento "documentos" (pasta local ou bucket
+  privado do Supabase Storage, ver config/armazenamento.py), fora dos
+  diretórios públicos, com um nome gerado pelo sistema; o nome original é
+  guardado apenas para o download.
+- O acesso ao arquivo só ocorre pelas views de download e visualização, que
+  verificam a permissão do usuário sobre o documento.
 """
-import os
+import logging
+import re
 import uuid
 import zipfile
 from pathlib import Path
 
-from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import SuspiciousFileOperation, ValidationError
+from django.core.files.storage import storages
 from django.db import transaction
 from django.db.models import Max
 
 from .models import TAMANHO_MAXIMO, TIPOS_PERMITIDOS, Documento, VersaoDocumento
+
+logger = logging.getLogger(__name__)
 
 ASSINATURAS = {
     "pdf": (b"%PDF-",),
@@ -70,30 +75,93 @@ def validar_arquivo(arquivo):
     return extensao
 
 
-def raiz():
-    return Path(settings.DOCUMENTOS_ROOT)
+# ---------------------------------------------------------------------------
+# Destino dos arquivos (pasta local ou Supabase Storage, ver config/armazenamento.py)
+# ---------------------------------------------------------------------------
+
+# Chave gravada em versao_documento.caminho_arquivo: "<id do documento>/<uuid>.<ext>".
+# É a mesma em qualquer destino; o prefixo do bucket fica na configuração.
+_CHAVE = re.compile(r"(?P<documento>[1-9][0-9]*)/[0-9a-f]{32}\.(?P<extensao>pdf|docx|png|jpg|jpeg)")
 
 
-def caminho_absoluto(versao):
-    """Resolve o caminho do arquivo e garante que ele está dentro da raiz privada."""
-    base = raiz().resolve()
-    caminho = (base / versao.caminho_arquivo).resolve()
-    if base not in caminho.parents:
-        raise ValidationError("Caminho de arquivo inválido.")
-    return caminho
+class ArquivoIndisponivel(Exception):
+    """O arquivo não existe ou o registro aponta para uma chave inválida (resposta 404)."""
+
+
+class ArmazenamentoIndisponivel(Exception):
+    """O destino de armazenamento falhou (rede, credenciais, serviço fora do ar)."""
+
+    mensagem = "Não foi possível acessar o armazenamento de documentos. Tente novamente em instantes."
+
+    def __init__(self, mensagem=None):
+        super().__init__(mensagem or self.mensagem)
+
+
+def armazenamento():
+    return storages["documentos"]
+
+
+def gerar_chave(documento, extensao):
+    return f"{documento.pk}/{uuid.uuid4().hex}.{extensao}"
+
+
+def chave_da_versao(versao):
+    """Valida a chave gravada no banco antes de qualquer acesso ao armazenamento.
+
+    Recusa caminhos absolutos, "..", barras invertidas e chaves de outro documento
+    ou de outra extensão: um registro adulterado nunca alcança outro arquivo.
+    """
+    chave = versao.caminho_arquivo or ""
+    encontrado = _CHAVE.fullmatch(chave)
+    if (not encontrado or int(encontrado["documento"]) != versao.documento_id
+            or encontrado["extensao"] != versao.extensao):
+        raise ArquivoIndisponivel("Chave de arquivo inválida.")
+    return chave
+
+
+def abrir_versao(versao):
+    """Abre o arquivo de uma versão para leitura (a autorização é verificada antes, na view)."""
+    chave = chave_da_versao(versao)
+    try:
+        return armazenamento().open(chave, "rb")
+    except (FileNotFoundError, SuspiciousFileOperation) as erro:
+        raise ArquivoIndisponivel("Arquivo não encontrado.") from erro
+    except Exception as erro:
+        logger.exception("Falha ao ler a versão %s no armazenamento de documentos.", versao.pk)
+        raise ArmazenamentoIndisponivel() from erro
+
+
+def _remover(destino, chave):
+    try:
+        destino.delete(chave)
+    except Exception:
+        logger.exception("Não foi possível remover o arquivo órfão %s.", chave)
 
 
 def gravar_versao(documento, arquivo, autor):
-    """Grava o arquivo e registra uma nova versão do documento."""
+    """Grava o arquivo e registra uma nova versão do documento.
+
+    O arquivo é gravado antes do registro: se a gravação falhar, nada é
+    registrado; se o registro falhar, o arquivo gravado é removido. Versões
+    anteriores nunca são sobrescritas (cada versão recebe uma chave nova).
+    """
     extensao = validar_arquivo(arquivo)
-    relativo = Path(str(documento.pk)) / f"{uuid.uuid4().hex}.{extensao}"
-    destino = raiz() / relativo
-    destino.parent.mkdir(parents=True, exist_ok=True)
-    temporario = destino.with_suffix(destino.suffix + ".parcial")
-    with open(temporario, "wb") as saida:
-        for bloco in arquivo.chunks():
-            saida.write(bloco)
-    os.replace(temporario, destino)
+    chave = gerar_chave(documento, extensao)
+    destino = armazenamento()
+    # Tipo gravado no armazenamento: o da extensão já validada pelo conteúdo,
+    # nunca o informado pelo navegador (que pode faltar ou estar errado).
+    arquivo.content_type = TIPOS_PERMITIDOS[extensao]
+    arquivo.seek(0)
+    try:
+        salvo = destino.save(chave, arquivo)
+    except Exception as erro:
+        _remover(destino, chave)
+        logger.exception("Falha ao gravar o arquivo do documento %s.", documento.pk)
+        raise ArmazenamentoIndisponivel() from erro
+    if salvo != chave:
+        # O destino renomeou o arquivo (chave já existente): não registra nada.
+        _remover(destino, salvo)
+        raise ArmazenamentoIndisponivel()
     try:
         with transaction.atomic():
             # Bloqueia o documento para numerar as versões sem conflito.
@@ -104,10 +172,10 @@ def gravar_versao(documento, arquivo, autor):
                 autor=autor,
                 numero_versao=ultima + 1,
                 nome_arquivo=_nome_seguro(arquivo.name),
-                caminho_arquivo=relativo.as_posix(),
+                caminho_arquivo=chave,
                 extensao=extensao,
                 tamanho_bytes=arquivo.size,
             )
     except Exception:
-        destino.unlink(missing_ok=True)
+        _remover(destino, chave)
         raise

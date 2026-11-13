@@ -9,6 +9,7 @@ from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 
 from config import ambiente
+from config.armazenamento import alvo_armazenamento, config_armazenamento
 from config.banco import alvo_do_banco, configurar_banco
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -132,7 +133,11 @@ globals().update(ambiente.config_https(os.environ))
 SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
 
 # No Render, recusa iniciar com DEBUG ligado, sem HTTPS ou fora do Supabase.
-ambiente.validar_producao(os.environ, DEBUG, HTTPS, BANCO_ALVO)
+# Destino dos arquivos de documentos: "local" (padrão) ou "supabase".
+# Ver config/armazenamento.py.
+DOCUMENTOS_ARMAZENAMENTO = alvo_armazenamento(os.environ)
+
+ambiente.validar_producao(os.environ, DEBUG, HTTPS, BANCO_ALVO, alvo_documentos=DOCUMENTOS_ARMAZENAMENTO)
 
 # ---------------------------------------------------------------------------
 # Internacionalização
@@ -162,10 +167,13 @@ STORAGES = {
             else "whitenoise.storage.CompressedManifestStaticFilesStorage"
         )
     },
+    # Documentos (RN04, RF06): pasta local ou bucket privado do Supabase Storage.
+    # Os arquivos ficam fora de STATIC/MEDIA públicos e só são entregues pelas
+    # views de download e visualização, que verificam a permissão do usuário.
+    "documentos": config_armazenamento(os.environ, DOCUMENTOS_ARMAZENAMENTO),
 }
 
-# Documentos ficam fora de STATIC/MEDIA públicos e serão entregues apenas por
-# view com verificação de permissão (RN04, RF06) — implementado em fase futura.
+# Pasta usada quando DOCUMENTOS_ARMAZENAMENTO=local.
 DOCUMENTOS_ROOT = Path(env("DOCUMENTOS_ROOT", "/data/documentos"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
