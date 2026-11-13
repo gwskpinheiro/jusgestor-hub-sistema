@@ -30,7 +30,7 @@
 
 <section class="cartao">
   <dl class="dados">
-    <div><dt>Cliente</dt><dd>{{ processo.cliente.nome }}</dd></div>
+    <div><dt>Cliente</dt><dd>{% if pode_ver_cliente %}<a href="{{ processo.cliente.get_absolute_url }}">{{ processo.cliente.nome }}</a>{% else %}{{ processo.cliente.nome }}{% endif %}</dd></div>
     <div><dt>Advogado responsável</dt><dd>{{ processo.responsavel.nome }}</dd></div>
     <div><dt>Cadastrado em</dt><dd>{{ processo.criado_em|date:"d/m/Y" }}</dd></div>
     {% if not consulta_basica %}

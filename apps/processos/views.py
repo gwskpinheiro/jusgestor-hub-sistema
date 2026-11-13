@@ -10,6 +10,7 @@ from apps.core.acesso import (
     compromissos_visiveis,
     documentos_visiveis,
     e_adm,
+    ids_clientes_visiveis,
     pode_editar_processo,
     processos_visiveis,
     registros_hora_visiveis,
@@ -31,8 +32,11 @@ def lista(request):
         qs = qs.filter(situacao=situacao)
     if busca:
         qs = qs.filter(Q(numero__icontains=busca) | Q(titulo__icontains=busca) | Q(cliente__nome__icontains=busca))
+    pagina = paginar(request, qs)
     return render(request, "processos/lista.html", {
-        "pagina": paginar(request, qs), "arquivados": arquivados, "busca": busca,
+        "pagina": pagina, "arquivados": arquivados, "busca": busca,
+        # Nome do cliente vira link só para quem já pode abrir o cadastro (evita 404).
+        "clientes_acessiveis": ids_clientes_visiveis(request.user, (p.cliente_id for p in pagina)),
         "situacao": situacao, "situacoes": SituacaoProcesso.choices,
         "pode_cadastrar": request.user.perfil in (Perfil.ADM, Perfil.ADV),
     })
@@ -74,6 +78,9 @@ def detalhe(request, pk):
         "processo": processo,
         "pode_editar": pode_editar_processo(usuario, processo),
         "consulta_basica": usuario.perfil == Perfil.AST,
+        # O nome do cliente aparece para quem vê o processo; o link, só para quem já
+        # pode abrir o cadastro do cliente (sem conceder acesso novo).
+        "pode_ver_cliente": bool(ids_clientes_visiveis(usuario, [processo.cliente_id])),
         "documentos": documentos_visiveis(usuario).filter(processo=processo).order_by("-criado_em"),
         "compromissos": compromissos_visiveis(usuario).filter(processo=processo)
         .select_related("responsavel").order_by("-inicio")[:10],

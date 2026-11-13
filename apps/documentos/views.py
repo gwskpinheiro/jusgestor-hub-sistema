@@ -7,7 +7,7 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.core.acesso import documentos_visiveis
+from apps.core.acesso import documentos_visiveis, ids_clientes_visiveis
 from apps.core.utils import paginar
 
 from .armazenamento import caminho_absoluto, gravar_versao
@@ -48,6 +48,7 @@ def detalhe(request, pk):
         "documento": documento,
         "versoes": documento.versoes.select_related("autor"),
         "form_versao": NovaVersaoForm(),
+        "pode_ver_cliente": bool(ids_clientes_visiveis(request.user, [documento.cliente_id])),
     })
 
 

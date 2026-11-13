@@ -35,7 +35,7 @@
         <tr>
           <td class="nowrap">{{ p.numero|default:"—" }}</td>
           <td><a href="{{ p.get_absolute_url }}">{{ p.titulo }}</a></td>
-          <td>{{ p.cliente.nome }}</td>
+          <td>{% if p.cliente_id in clientes_acessiveis %}<a href="{{ p.cliente.get_absolute_url }}">{{ p.cliente.nome }}</a>{% else %}{{ p.cliente.nome }}{% endif %}</td>
           <td>{{ p.responsavel.nome }}</td>
           <td><span class="selo selo--{{ p.situacao }}">{{ p.get_situacao_display }}</span>{% if p.arquivado %} <span class="selo selo--arquivado">Arquivado</span>{% endif %}</td>
           <td class="nowrap">{{ p.criado_em|date:"d/m/Y" }}</td>

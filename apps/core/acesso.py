@@ -37,6 +37,15 @@ def clientes_visiveis(usuario):
     return qs.filter(pk__in=AcessoCliente.objects.filter(usuario=usuario).values("cliente_id"))
 
 
+def ids_clientes_visiveis(usuario, ids):
+    """Dos clientes informados, os que o usuário pode abrir (para decidir se o nome
+    do cliente vira link). Apenas consulta clientes_visiveis: não concede acesso."""
+    ids = {i for i in ids if i is not None}
+    if not ids:
+        return set()
+    return set(clientes_visiveis(usuario).filter(pk__in=ids).values_list("pk", flat=True))
+
+
 def processos_visiveis(usuario):
     from apps.processos.models import AcessoProcesso, Processo
 

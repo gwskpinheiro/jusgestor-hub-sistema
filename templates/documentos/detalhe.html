@@ -17,7 +17,7 @@
 
 <section class="cartao">
   <dl class="dados">
-    <div><dt>Cliente</dt><dd>{{ documento.cliente.nome|default:"—" }}</dd></div>
+    <div><dt>Cliente</dt><dd>{% if documento.cliente and pode_ver_cliente %}<a href="{{ documento.cliente.get_absolute_url }}">{{ documento.cliente.nome }}</a>{% else %}{{ documento.cliente.nome|default:"—" }}{% endif %}</dd></div>
     <div><dt>Processo</dt><dd>{% if documento.processo %}<a href="{{ documento.processo.get_absolute_url }}">{{ documento.processo }}</a>{% else %}—{% endif %}</dd></div>
     <div class="largo"><dt>Descrição</dt><dd class="texto-livre">{{ documento.descricao|default:"—" }}</dd></div>
   </dl>
