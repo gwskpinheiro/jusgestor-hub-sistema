@@ -115,16 +115,74 @@ definição sem conversões `::varchar`/`::text` e sem parênteses (ver
    docker compose run --rm web python manage.py verificar_banco
    ```
 
+## 4. Documentos do sistema publicado (Supabase Storage)
+
+No sistema publicado, os arquivos ficam no bucket privado do Supabase Storage
+(`DOCUMENTOS_ARMAZENAMENTO=supabase`). **O backup do banco do Supabase não
+inclui esses arquivos**: eles têm comandos próprios, que acessam o bucket
+somente com `--remoto --confirmar <nome do bucket>` e usam as chaves S3 do
+`.env` sem exibi-las.
+
+| Comando | O que faz |
+|---|---|
+| `exportar_documentos` | Copia os arquivos do prefixo dos documentos para `backups/documentos/<origem>-<data>/`, com as **chaves originais** (iguais a `versao_documento.caminho_arquivo`). Somente leitura no bucket. Recusa pasta já usada. |
+| `verificar_backup_documentos` | Confere o manifesto (que não pode ter sido alterado) e o tamanho e o SHA-256 de cada arquivo; aponta arquivos fora do manifesto. |
+| `restaurar_documentos` | Verifica a cópia inteira e envia os arquivos **nos caminhos originais**. Arquivo já existente e idêntico é ignorado; **arquivo diferente nunca é sobrescrito** sem `--sobrescrever --confirmar-sobrescrita <bucket>`. Cada envio é relido e conferido. |
+| `testar_backup_documentos` | Teste completo só com arquivos fictícios em `verificacao-backup/<id>/`: cria, exporta, verifica, restaura, testa conflito e sobrescrita autorizada, e remove apenas o que criou. |
+
+Estrutura da cópia:
+
+```
+backups/documentos/supabase-AAAAMMDD-HHMMSS/
+  arquivos/<documento>/<uuid>.<ext>   cópia de cada arquivo
+  manifesto.json                      origem, prefixo, data; chave, tamanho e SHA-256 de cada arquivo
+  manifesto.sha256                    mesma lista no formato do "sha256sum -c"
+  manifesto.json.sha256               SHA-256 do próprio manifesto
+```
+
+### Backup real (não executado até a autorização)
+
+Faça junto com o backup do banco do Supabase (para que arquivos e registros
+correspondam ao mesmo momento) e evite envios de documentos durante a cópia:
+
+```powershell
+docker compose run --rm web python manage.py exportar_documentos --remoto --confirmar jusgestor-documentos
+docker compose run --rm web python manage.py verificar_backup_documentos backups/documentos/<pasta-criada>
+```
+
+Depois, copie a pasta para **outro dispositivo** (cópia independente). Ela
+contém documentos privados: `backups/` está no `.gitignore` e no
+`.dockerignore`, mas o disco onde ela fica também precisa ser protegido.
+
+### Restauração real
+
+1. `verificar_backup_documentos <pasta>`: só continue se estiver íntegra.
+2. Opcional e recomendado: ensaiar num prefixo isolado, sem tocar nos
+   documentos:
+   `restaurar_documentos <pasta> --remoto --confirmar jusgestor-documentos --prefixo-destino ensaio-restauracao`
+   (e remover esse prefixo depois, pelo painel).
+3. Restaurar nos caminhos originais (o prefixo do manifesto):
+   `restaurar_documentos <pasta> --remoto --confirmar jusgestor-documentos`
+4. Se houver **conflitos**, o comando para sem alterar nada nesses arquivos.
+   Só use `--sobrescrever --confirmar-sobrescrita jusgestor-documentos` depois
+   de decidir que a versão da cópia deve substituir a do bucket.
+
+### Teste realizado
+
+`testar_backup_documentos --remoto` executado com sucesso em 12/11/2026 no
+bucket `jusgestor-documentos`, com 3 arquivos fictícios (PDF, PNG e DOCX) em
+prefixo isolado: exportação, verificação, restauração com chaves originais,
+proteção contra sobrescrita, sobrescrita autorizada e remoção dos 6 arquivos
+criados pelo teste. Nenhum documento real foi listado, lido ou alterado.
+
 ## O que o RNF07 ainda depende de você
 
 | Parte do RNF07 | Situação |
 |---|---|
 | Preservar integridade no banco | Restrições, FKs com `PROTECT` e transações no sistema; validadas também na cópia restaurada |
-| Copiar banco **e documentos** | `backup.ps1` |
-| Testar restauração | `testar_restauracao.ps1` |
+| Copiar banco **e documentos** (local) | `backup.ps1` |
+| Copiar **documentos** do sistema publicado | `exportar_documentos --remoto` (pronto e testado; cópia real aguarda autorização) |
+| Copiar o **banco** do sistema publicado (Supabase) | **Pendente**: rotina de `pg_dump` do Supabase ainda não criada |
+| Testar restauração | `testar_restauracao.ps1` (local) e `testar_backup_documentos --remoto` (arquivos) |
 | Copiar **após sessões com alterações e antes de atualizações** | Rotina **manual**. Não há agendamento automático |
-| Manter **cópia independente** | **Manual**: levar a pasta para outro dispositivo ou usar `-Destino` |
-
-Fora do escopo local: o sistema publicado (Supabase e Render) tem
-armazenamento e backups próprios, que não são cobertos por estes scripts. Os
-documentos no Render ainda não têm armazenamento persistente.
+| Manter **cópia independente** | **Manual**: levar as pastas para outro dispositivo |

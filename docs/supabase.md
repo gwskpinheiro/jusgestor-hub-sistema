@@ -187,4 +187,7 @@ Para ativar (etapa futura, sem mudança de código):
 
    Executado com sucesso em 12/11/2026 no bucket `jusgestor-documentos`.
 5. **Backup:** o backup do banco do Supabase **não inclui** os arquivos do
-   Storage; a cópia dos documentos precisa de rotina própria (ainda a criar).
+   Storage. A cópia, a verificação e a restauração dos documentos usam os
+   comandos `exportar_documentos`, `verificar_backup_documentos` e
+   `restaurar_documentos` (ver [backup.md, seção 4](backup.md)). O teste com
+   arquivos fictícios foi executado com sucesso em 12/11/2026.
