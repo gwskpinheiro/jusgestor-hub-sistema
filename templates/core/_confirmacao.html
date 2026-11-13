@@ -1,0 +1,15 @@
+{% comment %}
+Modal de confirmação usado pelos formulários com data-confirmar (static/js/app.js).
+O formulário original continua enviando o próprio token CSRF; o modal só decide
+se o envio prossegue. Sem JavaScript, os formulários são enviados normalmente.
+{% endcomment %}
+<dialog class="modal" id="modal-confirmacao" aria-labelledby="modal-confirmacao-titulo" aria-describedby="modal-confirmacao-mensagem">
+  <form method="dialog" class="modal__conteudo">
+    <h2 class="modal__titulo" id="modal-confirmacao-titulo">Confirmar ação</h2>
+    <p class="modal__mensagem" id="modal-confirmacao-mensagem"></p>
+    <div class="modal__acoes">
+      <button type="submit" value="voltar" class="botao botao--secundario" data-modal-voltar autofocus>Voltar</button>
+      <button type="submit" value="confirmar" class="botao botao--primario" data-modal-confirmar>Confirmar</button>
+    </div>
+  </form>
+</dialog>

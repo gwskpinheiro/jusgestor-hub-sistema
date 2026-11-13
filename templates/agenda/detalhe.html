@@ -18,7 +18,9 @@
       {% csrf_token %}
       {% if compromisso.situacao == "pendente" %}
         <button type="submit" name="situacao" value="concluido" class="botao botao--secundario">Concluir</button>
-        <button type="submit" name="situacao" value="cancelado" class="botao botao--perigo">Cancelar</button>
+        <button type="submit" name="situacao" value="cancelado" class="botao botao--perigo"
+                data-confirmar-titulo="Cancelar compromisso" data-confirmar-botao="Cancelar compromisso"
+                data-confirmar="Cancelar este compromisso? O registro é mantido e pode ser reaberto.">Cancelar</button>
       {% else %}
         <button type="submit" name="situacao" value="pendente" class="botao botao--secundario">Reabrir</button>
       {% endif %}

@@ -26,11 +26,101 @@
     }
   });
 
-  // Confirmação antes de ações relevantes (arquivar, cancelar, redefinir senha).
+  // Confirmação antes de ações relevantes (cobrar, quitar, cancelar, arquivar,
+  // redefinir senha, desativar usuário), em um modal acessível (<dialog>).
+  //
+  // Atributos, no <form> ou no botão de envio (o do botão tem prioridade):
+  //   data-confirmar="mensagem"         ativa a confirmação
+  //   data-confirmar-titulo="..."       título do modal (padrão: "Confirmar ação")
+  //   data-confirmar-botao="..."        texto do botão de confirmação (padrão: texto do botão clicado)
+  //   data-confirmar-perigo             botão de confirmação em vermelho (também para .botao--perigo)
+  //   data-confirmar-se-desmarcar="x"   (no form) só confirma se a caixa "x", antes marcada, foi desmarcada
+  //
+  // O envio confirmado é o mesmo formulário, com o mesmo token CSRF e o mesmo
+  // botão (nome/valor) que o usuário escolheu.
+  var modal = document.getElementById("modal-confirmacao");
+  var pendente = null;
+
+  function precisaConfirmar(form, botao) {
+    if (botao && botao.hasAttribute("data-confirmar")) return botao;
+    if (!form.hasAttribute("data-confirmar")) return null;
+    var nomeCampo = form.getAttribute("data-confirmar-se-desmarcar");
+    if (nomeCampo) {
+      var campo = form.elements[nomeCampo];
+      if (!campo || !campo.defaultChecked || campo.checked) return null;
+    }
+    return form;
+  }
+
+  function reenviar(form, botao) {
+    form.setAttribute("data-confirmado", "1");
+    if (typeof form.requestSubmit === "function") {
+      form.requestSubmit(botao && botao.form === form ? botao : undefined);
+      return;
+    }
+    if (botao && botao.name) {
+      var oculto = document.createElement("input");
+      oculto.type = "hidden";
+      oculto.name = botao.name;
+      oculto.value = botao.value;
+      form.appendChild(oculto);
+    }
+    form.submit();
+  }
+
+  function abrirModal(form, botao, origem) {
+    var mensagem = origem.getAttribute("data-confirmar");
+    var titulo = origem.getAttribute("data-confirmar-titulo") || "Confirmar ação";
+    var textoBotao = origem.getAttribute("data-confirmar-botao")
+      || (botao && botao.textContent.trim()) || "Confirmar";
+    var perigo = origem.hasAttribute("data-confirmar-perigo")
+      || (botao && botao.classList.contains("botao--perigo"));
+    var confirmar = modal.querySelector("[data-modal-confirmar]");
+
+    modal.querySelector("#modal-confirmacao-titulo").textContent = titulo;
+    modal.querySelector("#modal-confirmacao-mensagem").textContent = mensagem;
+    confirmar.textContent = textoBotao;
+    confirmar.classList.toggle("botao--perigo-cheio", !!perigo);
+    confirmar.classList.toggle("botao--primario", !perigo);
+
+    pendente = { form: form, botao: botao, foco: document.activeElement };
+    modal.returnValue = "";
+    modal.showModal();  // foco inicial no botão "Voltar" (autofocus): opção mais segura
+  }
+
+  if (modal && typeof modal.showModal === "function") {
+    modal.addEventListener("close", function () {
+      var acao = pendente;
+      pendente = null;
+      if (!acao) return;
+      if (modal.returnValue === "confirmar") {
+        reenviar(acao.form, acao.botao);
+      } else if (acao.foco && typeof acao.foco.focus === "function") {
+        acao.foco.focus();  // devolve o foco a quem abriu o modal
+      }
+    });
+    // Clique no fundo escurecido equivale a "Voltar".
+    modal.addEventListener("click", function (evento) {
+      if (evento.target === modal) modal.close("voltar");
+    });
+  }
+
   document.addEventListener("submit", function (evento) {
-    var mensagem = evento.target.getAttribute("data-confirmar");
-    if (mensagem && !window.confirm(mensagem)) {
-      evento.preventDefault();
+    var form = evento.target;
+    if (!(form instanceof HTMLFormElement) || form.getAttribute("method") === "dialog") return;
+    if (form.getAttribute("data-confirmado") === "1") {
+      form.removeAttribute("data-confirmado");
+      return;  // envio já confirmado
+    }
+    var botao = evento.submitter || null;
+    var origem = precisaConfirmar(form, botao);
+    if (!origem) return;
+    evento.preventDefault();
+    if (modal && typeof modal.showModal === "function") {
+      abrirModal(form, botao, origem);
+    } else if (window.confirm(origem.getAttribute("data-confirmar"))) {
+      // Somente navegadores sem suporte a <dialog> (Chrome e Firefox atuais têm).
+      reenviar(form, botao);
     }
   });
 

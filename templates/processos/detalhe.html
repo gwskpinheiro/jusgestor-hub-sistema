@@ -17,6 +17,7 @@
     {% if pode_editar %}<a class="botao botao--secundario" href="{% url 'processos:editar' processo.pk %}">Editar</a>{% endif %}
     {% if user.perfil == "ADM" %}
       <form method="post" action="{% url 'processos:arquivar' processo.pk %}"
+            data-confirmar-titulo="{% if processo.arquivado %}Reativar processo{% else %}Arquivar processo{% endif %}"
             data-confirmar="{% if processo.arquivado %}Reativar este processo?{% else %}Arquivar este processo? Documentos, horas e lançamentos continuam vinculados.{% endif %}">
         {% csrf_token %}
         <input type="hidden" name="acao" value="{% if processo.arquivado %}desarquivar{% else %}arquivar{% endif %}">

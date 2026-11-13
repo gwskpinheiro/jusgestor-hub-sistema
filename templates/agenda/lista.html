@@ -54,7 +54,9 @@
               <form method="post" action="{% url 'agenda:situacao' c.pk %}" class="acoes">
                 {% csrf_token %}<input type="hidden" name="voltar" value="lista">
                 <button type="submit" name="situacao" value="concluido" class="botao botao--secundario botao--pequeno">Concluir</button>
-                <button type="submit" name="situacao" value="cancelado" class="botao botao--perigo botao--pequeno">Cancelar</button>
+                <button type="submit" name="situacao" value="cancelado" class="botao botao--perigo botao--pequeno"
+                        data-confirmar-titulo="Cancelar compromisso" data-confirmar-botao="Cancelar compromisso"
+                        data-confirmar="Cancelar “{{ c.titulo }}”? O registro é mantido e pode ser reaberto.">Cancelar</button>
               </form>
             {% endif %}
           </td>

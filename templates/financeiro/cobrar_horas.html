@@ -25,7 +25,7 @@
   <h2>{{ processo }}</h2>
   <p class="texto-suave">Cliente: {{ processo.cliente.nome }} · horas sem cobrança ativa: {{ total_disponivel|duracao }}</p>
   {% if form.fields.registros.queryset %}
-    <form method="post" action="?processo={{ processo.pk }}" novalidate data-confirmar="Gerar a cobrança com o valor informado?">
+    <form method="post" action="?processo={{ processo.pk }}" novalidate data-confirmar-titulo="Gerar cobrança" data-confirmar="Gerar a cobrança com o valor informado? As horas selecionadas ficarão vinculadas ao lançamento.">
       {% csrf_token %}
       {% if form.non_field_errors %}
         <div class="aviso aviso--error" role="alert">{% for erro in form.non_field_errors %}<p>{{ erro }}</p>{% endfor %}</div>

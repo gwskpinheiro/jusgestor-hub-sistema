@@ -32,13 +32,14 @@
   <h2>Quitar ou cancelar</h2>
   <p class="texto-suave texto-pequeno">Sem parcelamento ou pagamento parcial: a quitação é do valor integral.</p>
   <div class="acoes">
-    <form method="post" action="{% url 'financeiro:quitar' lancamento.pk %}" class="acoes" data-confirmar="Confirmar a quitação integral deste lançamento?">
+    <form method="post" action="{% url 'financeiro:quitar' lancamento.pk %}" class="acoes" data-confirmar-titulo="Quitar lançamento" data-confirmar="Confirmar a quitação integral deste lançamento?">
       {% csrf_token %}
       <label for="id_data_quitacao" class="texto-pequeno">Data da quitação</label>
       {{ form_quitacao.data_quitacao }}
       <button type="submit" class="botao botao--primario">Quitar</button>
     </form>
     <form method="post" action="{% url 'financeiro:cancelar' lancamento.pk %}"
+          data-confirmar-titulo="Cancelar lançamento"
           data-confirmar="Cancelar este lançamento?{% if cobrancas %} As horas vinculadas serão liberadas e o histórico será mantido.{% endif %}">
       {% csrf_token %}
       <button type="submit" class="botao botao--perigo">Cancelar lançamento</button>

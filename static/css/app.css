@@ -342,7 +342,23 @@ a.navegacao__item--ativo:hover { background: var(--cor-destaque); }
 
 .cabecalho-impressao { display: none; }
 
+/* Modal de confirmação (substitui window.confirm; <dialog> nativo: foco
+   preso no modal, Esc fecha, fundo inerte). */
+.modal {
+  width: min(440px, calc(100vw - 2rem)); padding: 0; border: 1px solid var(--cor-borda-forte);
+  border-radius: 12px; color: var(--cor-texto); background: var(--cor-superficie);
+  box-shadow: 0 20px 50px rgba(15, 29, 51, .25);
+}
+.modal::backdrop { background: rgba(11, 27, 46, .55); }
+.modal__conteudo { margin: 0; padding: 1.4rem 1.5rem 1.25rem; }
+.modal__titulo { font-size: 1.1rem; margin: 0 0 .6rem; }
+.modal__mensagem { margin: 0 0 1.25rem; color: var(--cor-texto); }
+.modal__acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .6rem; }
+.botao--perigo-cheio { background: var(--cor-erro-texto); color: #fff; }
+.botao--perigo-cheio:hover { background: #861515; }
+
 @media (max-width: 600px) {
+  .modal__acoes .botao { flex: 1 1 auto; }
   .barra { grid-template-columns: 1fr auto; }
   .barra__trilho { grid-column: 1 / -1; grid-row: 2; }
   .filtros > div { flex: 1 1 140px; }
@@ -350,7 +366,7 @@ a.navegacao__item--ativo:hover { background: var(--cor-destaque); }
 }
 
 @media print {
-  .nao-imprimir, .filtros, .paginacao, .acoes, .mensagens { display: none !important; }
+  .nao-imprimir, .filtros, .paginacao, .acoes, .mensagens, .modal { display: none !important; }
   .cabecalho-impressao { display: block; margin-bottom: 1rem; }
   .cartao, .cartao-resumo, .tabela-rolagem { box-shadow: none; }
   .tabela-rolagem { overflow: visible; border: 0; }

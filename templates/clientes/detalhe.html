@@ -13,6 +13,7 @@
     {% if not cliente.arquivado %}<a class="botao botao--secundario" href="{% url 'clientes:editar' cliente.pk %}">Editar</a>{% endif %}
     {% if user.perfil == "ADM" %}
       <form method="post" action="{% url 'clientes:arquivar' cliente.pk %}"
+            data-confirmar-titulo="{% if cliente.arquivado %}Reativar cliente{% else %}Arquivar cliente{% endif %}"
             data-confirmar="{% if cliente.arquivado %}Reativar este cliente?{% else %}Arquivar este cliente? Os processos e documentos continuam vinculados.{% endif %}">
         {% csrf_token %}
         <input type="hidden" name="acao" value="{% if cliente.arquivado %}desarquivar{% else %}arquivar{% endif %}">

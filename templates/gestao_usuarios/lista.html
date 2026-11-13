@@ -41,6 +41,7 @@
               <a class="botao botao--secundario botao--pequeno" href="{% url 'gestao_usuarios:editar' u.pk %}">Editar</a>
               {% if u.perfil != "ADM" %}<a class="botao botao--secundario botao--pequeno" href="{% url 'gestao_usuarios:acessos' u.pk %}">Acessos</a>{% endif %}
               <form method="post" action="{% url 'gestao_usuarios:redefinir_senha' u.pk %}"
+                    data-confirmar-titulo="Redefinir senha"
                     data-confirmar="Gerar nova senha temporária para {{ u.nome }}? As sessões abertas dessa conta serão encerradas.">
                 {% csrf_token %}
                 <button type="submit" class="botao botao--perigo botao--pequeno">Redefinir senha</button>

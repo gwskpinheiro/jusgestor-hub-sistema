@@ -10,7 +10,9 @@
 {% if aviso %}<p class="aviso aviso--warning">{{ aviso }}</p>{% endif %}
 
 <section class="cartao formulario">
-  <form method="post" novalidate{% if form.is_multipart %} enctype="multipart/form-data"{% endif %}>
+  <form method="post" novalidate{% if form.is_multipart %} enctype="multipart/form-data"{% endif %}{% if confirmacao %}
+        data-confirmar="{{ confirmacao.mensagem }}" data-confirmar-titulo="{{ confirmacao.titulo }}"
+        data-confirmar-botao="{{ confirmacao.botao }}"{% if confirmacao.se_desmarcar %} data-confirmar-se-desmarcar="{{ confirmacao.se_desmarcar }}"{% endif %}{% if confirmacao.perigo %} data-confirmar-perigo{% endif %}{% endif %}>
     {% csrf_token %}
     {% if form.non_field_errors %}
       <div class="aviso aviso--error" role="alert">

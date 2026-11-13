@@ -52,6 +52,7 @@ def novo(request):
 @somente_adm
 def editar(request, pk):
     usuario = get_object_or_404(Usuario, pk=pk)
+    nome, estava_ativo = usuario.nome, usuario.ativo
     form = UsuarioForm(request.POST or None, instance=usuario)
     if request.method == "POST" and form.is_valid():
         try:
@@ -61,9 +62,15 @@ def editar(request, pk):
         else:
             messages.success(request, "Usuário atualizado.")
             return redirect("gestao_usuarios:lista")
-    return render(request, "core/form_generico.html", {
-        "form": form, "titulo": f"Editar usuário: {usuario.nome}", "voltar": "gestao_usuarios:lista",
-    })
+    contexto = {"form": form, "titulo": f"Editar usuário: {nome}", "voltar": "gestao_usuarios:lista"}
+    if estava_ativo:
+        # Confirmação no navegador apenas quando a caixa "ativo" for desmarcada.
+        contexto["confirmacao"] = {
+            "se_desmarcar": "ativo", "titulo": "Desativar usuário", "botao": "Desativar e salvar", "perigo": True,
+            "mensagem": f"Desativar a conta de {nome}? O acesso ao sistema será bloqueado; "
+                        "o cadastro e o histórico são mantidos e a conta pode ser reativada.",
+        }
+    return render(request, "core/form_generico.html", contexto)
 
 
 @never_cache
