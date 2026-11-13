@@ -177,7 +177,14 @@ Para ativar (etapa futura, sem mudança de código):
    Storage do projeto e ignoram as políticas: guarde-as somente no `.env`
    local e nas variáveis do Render.
 3. **Variáveis:** preencha `SUPABASE_STORAGE_*` (ver `.env.example`).
-4. **Teste de conexão:** gravar, ler e apagar um arquivo de teste no bucket,
-   com autorização prévia (comando ainda a criar).
+4. **Teste de conexão:** grava, lê (com conferência SHA-256) e remove um
+   único PDF fictício no prefixo exclusivo `verificacao-conexao/`, sem listar
+   nem tocar nos documentos e sem mudar `DOCUMENTOS_ARMAZENAMENTO`:
+
+   ```powershell
+   docker compose run --rm web python manage.py verificar_armazenamento --remoto --confirmar <nome-do-bucket>
+   ```
+
+   Executado com sucesso em 12/11/2026 no bucket `jusgestor-documentos`.
 5. **Backup:** o backup do banco do Supabase **não inclui** os arquivos do
    Storage; a cópia dos documentos precisa de rotina própria (ainda a criar).
