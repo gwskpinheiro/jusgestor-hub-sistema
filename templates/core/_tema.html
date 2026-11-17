@@ -1,0 +1,10 @@
+{% load interface %}{% comment %}
+Alternância entre tema claro (padrão) e escuro. O botão fica oculto até o
+JavaScript carregar, pois só funciona com ele; a preferência fica no navegador.
+aria-pressed="true" indica o modo escuro ativo. Parâmetros: classe, compacto.
+{% endcomment %}
+<button type="button" class="botao-tema {{ classe }}" data-alternar-tema aria-pressed="false" hidden
+        title="Alternar entre tema claro e escuro">
+  {% icone "lua" "icone botao-tema__lua" %}{% icone "sol" "icone botao-tema__sol" %}
+  <span class="botao-tema__texto{% if compacto %} sr-only{% endif %}">Modo escuro</span>
+</button>

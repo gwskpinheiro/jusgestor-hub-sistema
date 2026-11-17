@@ -26,6 +26,48 @@
     }
   });
 
+  // Tema claro (padrão) ou escuro. A preferência fica somente no navegador
+  // (localStorage); o tema salvo é aplicado no <head>, antes da pintura.
+  var CHAVE_TEMA = "jusgestor-tema";
+  var raiz = document.documentElement;
+  var botoesTema = document.querySelectorAll("[data-alternar-tema]");
+
+  function temaAtual() {
+    return raiz.getAttribute("data-tema") === "escuro" ? "escuro" : "claro";
+  }
+
+  function aplicarTema(tema) {
+    if (tema === "escuro") raiz.setAttribute("data-tema", "escuro");
+    else raiz.removeAttribute("data-tema");
+    botoesTema.forEach(function (botao) {
+      botao.setAttribute("aria-pressed", tema === "escuro" ? "true" : "false");
+    });
+  }
+
+  function salvarTema(tema) {
+    try {
+      if (tema === "escuro") window.localStorage.setItem(CHAVE_TEMA, "escuro");
+      else window.localStorage.removeItem(CHAVE_TEMA);
+    } catch (e) { /* armazenamento indisponível: vale só para esta página */ }
+  }
+
+  botoesTema.forEach(function (botao) {
+    botao.hidden = false;
+    botao.addEventListener("click", function () {
+      var novo = temaAtual() === "escuro" ? "claro" : "escuro";
+      aplicarTema(novo);
+      salvarTema(novo);
+    });
+  });
+  aplicarTema(temaAtual());
+
+  // Mantém outras abas abertas do sistema no mesmo tema.
+  window.addEventListener("storage", function (evento) {
+    if (evento.key === CHAVE_TEMA || evento.key === null) {
+      aplicarTema(evento.newValue === "escuro" ? "escuro" : "claro");
+    }
+  });
+
   // Confirmação antes de ações relevantes (cobrar, quitar, cancelar, arquivar,
   // redefinir senha, desativar usuário), em um modal acessível (<dialog>).
   //

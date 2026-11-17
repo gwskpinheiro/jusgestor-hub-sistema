@@ -4,10 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo_documento %}{% block titulo %}JusGestor Hub{% endblock %} · JusGestor Hub{% endblock %}</title>
+  {# Aplica o tema salvo antes da primeira pintura (evita piscar em claro). Padrão: claro. #}
+  <script>(function(){try{if(localStorage.getItem("jusgestor-tema")==="escuro"){document.documentElement.setAttribute("data-tema","escuro");}}catch(e){}})();</script>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="{% block classe_body %}{% endblock %}">
   {% block corpo %}{% endblock %}
+  {% block tema_flutuante %}{% include "core/_tema.html" with classe="botao-tema--flutuante" %}{% endblock %}
   <script src="{% static 'js/app.js' %}" defer></script>
 </body>
 </html>

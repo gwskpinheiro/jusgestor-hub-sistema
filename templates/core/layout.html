@@ -9,6 +9,7 @@
     {% icone "menu" %}<span class="sr-only">Abrir menu</span>
   </button>
   <span class="barra-topo__marca">JusGestor Hub</span>
+  {% include "core/_tema.html" with classe="botao-tema--topo" compacto=True %}
 </header>
 
 <aside class="menu-lateral" id="menu-lateral">
@@ -39,6 +40,7 @@
       <strong>{{ user.nome }}</strong>
       <small>{{ user.get_perfil_display }}</small>
     </div>
+    {% include "core/_tema.html" with classe="botao-tema--menu" %}
     <form method="post" action="{% url 'usuarios:logout' %}">
       {% csrf_token %}
       <button type="submit" class="botao botao--sair">{% icone "sair" %}<span>Sair</span></button>
@@ -53,3 +55,6 @@
 </main>
 {% include "core/_confirmacao.html" %}
 {% endblock %}
+
+{# O layout com menu já tem o botão de tema no menu e na barra do topo. #}
+{% block tema_flutuante %}{% endblock %}

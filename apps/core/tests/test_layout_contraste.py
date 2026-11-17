@@ -28,7 +28,9 @@ class LayoutContrasteTests(SimpleTestCase):
             la, lb = sorted((luminancia(a), luminancia(b)), reverse=True)
             return (la + 0.05) / (lb + 0.05)
 
-        variaveis = dict(re.findall(r"--([a-z-]+):\s*(#[0-9a-fA-F]{6})", css()))
+        # Tema claro (padrão): tokens do bloco :root. O tema escuro é verificado em test_tema.py.
+        raiz = re.search(r":root\s*\{(.*?)\n\}", css(), re.S).group(1)
+        variaveis = dict(re.findall(r"--([a-z-]+):\s*(#[0-9a-fA-F]{6})", raiz))
         self.assertGreaterEqual(contraste(variaveis["cor-borda-campo"], "#ffffff"), 3.0)   # WCAG 1.4.11
         self.assertGreaterEqual(contraste(variaveis["cor-foco"], "#ffffff"), 3.0)
         self.assertGreaterEqual(contraste(variaveis["cor-texto-rotulo"], variaveis["cor-cabecalho-tabela"]), 4.5)
