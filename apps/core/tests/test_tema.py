@@ -55,11 +55,16 @@ PARES_DE_TEXTO = [
     ("cor-erro-texto", "cor-erro-fundo"), ("cor-info-texto", "cor-info-fundo"),
     ("cor-neutro-texto", "cor-neutro-fundo"), ("cor-menu-texto", "cor-menu"),
     ("cor-texto-botao", "cor-menu-ativo"),
+    ("tipo-prazo-texto", "tipo-prazo-fundo"), ("tipo-tarefa-texto", "tipo-tarefa-fundo"),
+    ("tipo-compromisso-texto", "tipo-compromisso-fundo"),
+    ("cor-texto", "tipo-prazo-fundo"), ("cor-texto", "tipo-tarefa-fundo"), ("cor-texto", "tipo-compromisso-fundo"),
     ("cor-texto", "cor-info-fundo"), ("cor-texto", "cor-fundo-alternativo"),
 ]
-# Bordas de campos e foco: mínimo 3:1 (WCAG 1.4.11).
+# Bordas de campos, foco e marcadores de tipo: mínimo 3:1 (WCAG 1.4.11).
 PARES_GRAFICOS = [
     ("cor-borda-campo", "cor-campo"), ("cor-foco", "cor-fundo"), ("cor-foco", "cor-superficie"),
+    ("tipo-prazo-acento", "cor-superficie"), ("tipo-tarefa-acento", "cor-superficie"),
+    ("tipo-compromisso-acento", "cor-superficie"),
 ]
 
 
@@ -97,6 +102,15 @@ class TokensDoTemaTests(SimpleTestCase):
             bloco = conteudo.split(seletor, 1)[1].split("}", 1)[0]
             with self.subTest(seletor=seletor):
                 self.assertNotIn("#fff", bloco)
+
+    def test_cores_dos_tipos_de_compromisso(self):
+        claros = tokens_claros()
+        # Prazo vermelho, tarefa azul, compromisso verde (canal dominante da cor de acento).
+        for tipo, canal in (("prazo", 0), ("tarefa", 2), ("compromisso", 1)):
+            cor = claros[f"tipo-{tipo}-acento"]
+            canais = [int(cor[i:i + 2], 16) for i in (1, 3, 5)]
+            with self.subTest(tipo=tipo):
+                self.assertEqual(canais.index(max(canais)), canal)
 
 
 class AlternanciaDeTemaTests(f.Cenario):

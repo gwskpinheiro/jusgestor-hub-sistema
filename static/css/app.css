@@ -54,6 +54,19 @@
   --sombra-modal: 0 20px 50px rgba(15, 29, 51, .25);
   --cor-fundo-modal: rgba(11, 27, 46, .55);
   --sombra-foco-campo: 0 0 0 3px rgba(3, 105, 161, .2);
+  /* Tipos de compromisso: cor + ícone + texto (a cor nunca é o único sinal). */
+  --tipo-prazo-texto: #a61b1b;
+  --tipo-prazo-fundo: #fdecec;
+  --tipo-prazo-borda: #f3b4b4;
+  --tipo-prazo-acento: #dc2626;
+  --tipo-tarefa-texto: #1d4ed8;
+  --tipo-tarefa-fundo: #e8f0fe;
+  --tipo-tarefa-borda: #b9cdf7;
+  --tipo-tarefa-acento: #2563eb;
+  --tipo-compromisso-texto: #166534;
+  --tipo-compromisso-fundo: #e7f6ec;
+  --tipo-compromisso-borda: #a7dcb9;
+  --tipo-compromisso-acento: #16a34a;
   color-scheme: light;
   --raio: 8px;
   --largura-menu: 232px;
@@ -111,6 +124,18 @@
     --sombra-modal: 0 20px 50px rgba(0, 0, 0, .6);
     --cor-fundo-modal: rgba(2, 6, 12, .7);
     --sombra-foco-campo: 0 0 0 3px rgba(56, 189, 248, .25);
+    --tipo-prazo-texto: #fca5a5;
+    --tipo-prazo-fundo: #3a1418;
+    --tipo-prazo-borda: #7a2a31;
+    --tipo-prazo-acento: #f87171;
+    --tipo-tarefa-texto: #93c5fd;
+    --tipo-tarefa-fundo: #13253f;
+    --tipo-tarefa-borda: #2b4a75;
+    --tipo-tarefa-acento: #60a5fa;
+    --tipo-compromisso-texto: #86efac;
+    --tipo-compromisso-fundo: #10301e;
+    --tipo-compromisso-borda: #23603b;
+    --tipo-compromisso-acento: #4ade80;
   }
 }
 
@@ -487,10 +512,39 @@ html[data-tema="escuro"] .botao-tema__lua { display: none; }
 }
 .botao-tema--flutuante:hover { border-color: var(--cor-borda-campo); }
 
+/* =====================================================================
+   Tipos de compromisso (Prazo, Tarefa, Compromisso): cor + ícone + texto
+   ===================================================================== */
+.tipo {
+  --tipo-texto: var(--cor-neutro-texto); --tipo-fundo: var(--cor-neutro-fundo);
+  --tipo-borda: var(--cor-borda-forte); --tipo-acento: var(--cor-borda-campo);
+}
+.tipo--prazo {
+  --tipo-texto: var(--tipo-prazo-texto); --tipo-fundo: var(--tipo-prazo-fundo);
+  --tipo-borda: var(--tipo-prazo-borda); --tipo-acento: var(--tipo-prazo-acento);
+}
+.tipo--tarefa {
+  --tipo-texto: var(--tipo-tarefa-texto); --tipo-fundo: var(--tipo-tarefa-fundo);
+  --tipo-borda: var(--tipo-tarefa-borda); --tipo-acento: var(--tipo-tarefa-acento);
+}
+.tipo--compromisso {
+  --tipo-texto: var(--tipo-compromisso-texto); --tipo-fundo: var(--tipo-compromisso-fundo);
+  --tipo-borda: var(--tipo-compromisso-borda); --tipo-acento: var(--tipo-compromisso-acento);
+}
+.tipo {
+  display: inline-flex; align-items: center; gap: .3rem; padding: .08rem .55rem .08rem .45rem;
+  border-radius: 999px; border: 1px solid var(--tipo-borda);
+  background: var(--tipo-fundo); color: var(--tipo-texto);
+  font-size: .75rem; font-weight: 600; line-height: 1.5; white-space: nowrap; vertical-align: middle;
+}
+.tipo .icone { width: 14px; height: 14px; }
+.tipo--mini { padding: 0 .45rem 0 .35rem; font-variant-numeric: tabular-nums; }
+
 @media (max-width: 600px) {
   .botao-tema--flutuante { top: .5rem; right: .5rem; }
 }
 
 @media print {
   .botao-tema { display: none !important; }
+  .tipo { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

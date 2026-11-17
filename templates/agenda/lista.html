@@ -46,7 +46,7 @@
             {% if c.destaque_atual == "vencido" %}<span class="selo selo--vencido">Vencido</span>{% elif c.destaque_atual == "proximo" %}<span class="selo selo--proximo">Próximo</span>{% endif %}
           </td>
           <td><a href="{{ c.get_absolute_url }}">{{ c.titulo }}</a></td>
-          <td>{{ c.get_tipo_display }}</td>
+          <td>{% include "agenda/_tipo.html" with tipo=c.tipo rotulo=c.get_tipo_display %}</td>
           <td>{{ c.responsavel.nome }}</td>
           <td><span class="selo selo--{{ c.situacao }}">{{ c.get_situacao_display }}</span></td>
           <td>
