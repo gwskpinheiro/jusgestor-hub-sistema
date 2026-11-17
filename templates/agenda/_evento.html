@@ -1,0 +1,15 @@
+{% load interface %}{% comment %}
+Compromisso no calendário. Tipo indicado por cor, ícone e texto (o texto fica
+oculto visualmente no modo compacto, mas é lido por leitores de tela).
+Parâmetros: c (compromisso com destaque_atual e inicio_local), compacto.
+{% endcomment %}
+<a class="evento evento--{{ c.tipo }}{% if c.situacao == 'concluido' %} evento--concluido{% elif c.situacao == 'cancelado' %} evento--cancelado{% endif %}{% if c.destaque_atual %} evento--{{ c.destaque_atual }}{% endif %}"
+   href="{{ c.get_absolute_url }}"
+   title="{{ c.get_tipo_display }} · {{ c.inicio_local|date:'d/m/Y H:i' }} · {{ c.titulo }}{% if c.situacao != 'pendente' %} ({{ c.get_situacao_display }}){% endif %}{% if c.destaque_atual == 'vencido' %} · Vencido{% elif c.destaque_atual == 'proximo' %} · Próximas 24 h{% endif %}">
+  {% icone c.tipo "icone evento__icone" %}
+  <span class="evento__tipo{% if compacto %} sr-only{% endif %}">{{ c.get_tipo_display }}</span>
+  <span class="evento__hora">{{ c.inicio_local|time:"H:i" }}</span>
+  <span class="evento__titulo">{{ c.titulo }}</span>
+  {% if c.destaque_atual == "vencido" %}<span class="selo selo--vencido evento__selo">Vencido</span>{% elif c.destaque_atual == "proximo" %}<span class="selo selo--proximo evento__selo">Próximas 24 h</span>{% endif %}
+  {% if c.situacao == "concluido" %}<span class="evento__situacao">Concluído</span>{% elif c.situacao == "cancelado" %}<span class="evento__situacao">Cancelado</span>{% endif %}
+</a>

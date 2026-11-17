@@ -1,0 +1,154 @@
+{% extends "core/layout.html" %}
+{% load interface %}
+
+{% block titulo %}Agenda{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <h1>Agenda</h1>
+    <p class="subtitulo">Compromissos, tarefas e prazos · as datas são informadas pelo usuário; o sistema não calcula prazos legais</p>
+  </div>
+  <a class="botao botao--primario" href="{% url 'agenda:novo' %}">+ Novo compromisso</a>
+</div>
+
+{% include "agenda/_visoes.html" with ativa=visao %}
+
+<div class="calendario-barra">
+  <div class="calendario-navegacao">
+    <a class="botao botao--secundario botao--quadrado" href="?visao={{ visao }}&amp;data={{ periodo.anterior|date:'Y-m-d' }}" rel="prev"
+       aria-label="{% if visao == 'dia' %}Dia anterior{% elif visao == 'semana' %}Semana anterior{% elif visao == 'ano' %}Ano anterior{% else %}Mês anterior{% endif %}">{% icone "anterior" %}</a>
+    <a class="botao botao--secundario" href="?visao={{ visao }}&amp;data={{ hoje|date:'Y-m-d' }}">Hoje</a>
+    <a class="botao botao--secundario botao--quadrado" href="?visao={{ visao }}&amp;data={{ periodo.proximo|date:'Y-m-d' }}" rel="next"
+       aria-label="{% if visao == 'dia' %}Próximo dia{% elif visao == 'semana' %}Próxima semana{% elif visao == 'ano' %}Próximo ano{% else %}Próximo mês{% endif %}">{% icone "proximo" %}</a>
+  </div>
+  <h2 class="calendario-titulo" id="titulo-periodo">{{ periodo.titulo }}</h2>
+  <form class="calendario-ir" method="get">
+    <input type="hidden" name="visao" value="{{ visao }}">
+    <label class="sr-only" for="ir-data">Ir para a data</label>
+    <input type="date" id="ir-data" name="data" value="{{ periodo.referencia|date:'Y-m-d' }}">
+    <button type="submit" class="botao botao--secundario botao--pequeno">Ir</button>
+  </form>
+</div>
+
+<div class="calendario-rodape-barra">
+  {% include "agenda/_legenda.html" %}
+  <p class="texto-suave texto-pequeno" aria-live="polite">{{ total }} evento{{ total|pluralize }} no período</p>
+</div>
+
+{% if visao == "mes" %}
+  <div class="calendario" aria-labelledby="titulo-periodo">
+    <table class="calendario-mes">
+      <thead><tr>{% for rotulo in dias_da_semana %}<th scope="col">{{ rotulo }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for semana in semanas %}
+          <tr>
+            {% for dia in semana %}
+              <td class="calendario-mes__dia{% if not dia.no_mes %} calendario-mes__dia--fora{% endif %}{% if dia.hoje %} calendario-mes__dia--hoje{% endif %}">
+                <a class="calendario-mes__numero" href="?visao=dia&amp;data={{ dia.data|date:'Y-m-d' }}"
+                   aria-label="{{ dia.data|date:'j \d\e F'|lower }}{% if dia.hoje %} (hoje){% endif %}: abrir o dia"{% if dia.hoje %} aria-current="date"{% endif %}>{{ dia.data.day }}</a>
+                {% if dia.eventos %}
+                  <ul class="calendario-eventos">
+                    {% for c in dia.eventos %}<li>{% include "agenda/_evento.html" with compacto=True %}</li>{% endfor %}
+                  </ul>
+                  {% if dia.excedentes %}<a class="calendario-mais" href="?visao=dia&amp;data={{ dia.data|date:'Y-m-d' }}">+{{ dia.excedentes }} mais</a>{% endif %}
+                {% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% elif visao == "ano" %}
+  <div class="calendario-ano" aria-labelledby="titulo-periodo">
+    {% for mes in meses %}
+      <section class="cartao mini-mes">
+        <div class="mini-mes__cabecalho">
+          <h3><a href="?visao=mes&amp;data={{ mes.data|date:'Y-m-d' }}">{{ mes.nome }}</a></h3>
+          <span class="texto-suave texto-pequeno">{{ mes.total }} evento{{ mes.total|pluralize }}</span>
+        </div>
+        {% if mes.total %}
+          <p class="mini-mes__totais">
+            {% if mes.totais.prazo %}<span class="tipo tipo--prazo tipo--mini" title="Prazos">{% icone "prazo" "icone tipo__icone" %}<span class="sr-only">Prazos: </span>{{ mes.totais.prazo }}</span>{% endif %}
+            {% if mes.totais.tarefa %}<span class="tipo tipo--tarefa tipo--mini" title="Tarefas">{% icone "tarefa" "icone tipo__icone" %}<span class="sr-only">Tarefas: </span>{{ mes.totais.tarefa }}</span>{% endif %}
+            {% if mes.totais.compromisso %}<span class="tipo tipo--compromisso tipo--mini" title="Compromissos">{% icone "compromisso" "icone tipo__icone" %}<span class="sr-only">Compromissos: </span>{{ mes.totais.compromisso }}</span>{% endif %}
+          </p>
+        {% endif %}
+        <table class="mini-mes__grade">
+          <thead><tr>{% for rotulo in dias_da_semana %}<th scope="col" abbr="{{ rotulo }}">{{ rotulo|slice:":1" }}</th>{% endfor %}</tr></thead>
+          <tbody>
+            {% for semana in mes.semanas %}
+              <tr>
+                {% for dia in semana %}
+                  <td>{% if dia %}{% if dia.total %}<a class="mini-mes__dia mini-mes__dia--com-eventos{% if dia.hoje %} mini-mes__dia--hoje{% endif %}" href="?visao=dia&amp;data={{ dia.data|date:'Y-m-d' }}" title="{{ dia.total }} evento{{ dia.total|pluralize }}" aria-label="{{ dia.data|date:'j \d\e F'|lower }}: {{ dia.total }} evento{{ dia.total|pluralize }}">{{ dia.data.day }}<span class="mini-mes__marcas" aria-hidden="true">{% for t in dia.tipos %}<span class="marca-tipo marca-tipo--{{ t }}"></span>{% endfor %}</span></a>{% else %}<span class="mini-mes__dia{% if dia.hoje %} mini-mes__dia--hoje{% endif %}">{{ dia.data.day }}</span>{% endif %}{% endif %}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% endfor %}
+  </div>
+
+{% elif visao == "semana" %}
+  <div class="calendario calendario-semana" aria-labelledby="titulo-periodo">
+    <table class="calendario-horas calendario-horas--semana">
+      <thead>
+        <tr>
+          <th scope="col"><span class="sr-only">Hora</span></th>
+          {% for dia in dias %}
+            <th scope="col"{% if dia.hoje %} class="calendario-horas__hoje"{% endif %}><a href="?visao=dia&amp;data={{ dia.data|date:'Y-m-d' }}"{% if dia.hoje %} aria-current="date"{% endif %}>{{ dia.rotulo }} <strong>{{ dia.data|date:"d/m" }}</strong></a></th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in linhas %}
+          <tr>
+            <th scope="row" class="calendario-horas__hora">{{ linha.hora|stringformat:"02d" }}:00</th>
+            {% for celula in linha.celulas %}
+              <td>{% for c in celula %}{% include "agenda/_evento.html" with compacto=True %}{% endfor %}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {# Em telas estreitas, a semana aparece como lista por dia (sem rolagem lateral). #}
+  <div class="semana-lista" aria-labelledby="titulo-periodo">
+    {% for dia in dias %}
+      <section class="cartao semana-lista__dia{% if dia.hoje %} semana-lista__dia--hoje{% endif %}">
+        <h3><a href="?visao=dia&amp;data={{ dia.data|date:'Y-m-d' }}">{{ dia.rotulo }}, {{ dia.data|date:"d/m" }}</a>{% if dia.hoje %} <span class="selo selo--hoje">Hoje</span>{% endif %}</h3>
+        {% if dia.eventos %}
+          <ul class="calendario-eventos">{% for c in dia.eventos %}<li>{% include "agenda/_evento.html" with compacto=False %}</li>{% endfor %}</ul>
+        {% else %}
+          <p class="texto-suave texto-pequeno">Sem eventos.</p>
+        {% endif %}
+      </section>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="calendario calendario-dia" aria-labelledby="titulo-periodo">
+    {% if total %}
+      <table class="calendario-horas calendario-horas--dia">
+        <tbody>
+          {% for linha in linhas %}
+            <tr{% if not linha.celulas.0 %} class="calendario-horas__vazia"{% endif %}>
+              <th scope="row" class="calendario-horas__hora">{{ linha.hora|stringformat:"02d" }}:00</th>
+              <td>{% for c in linha.celulas.0 %}{% include "agenda/_evento.html" with compacto=False %}{% endfor %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="cartao estado-vazio">
+        {% icone "agenda" "icone estado-vazio__icone" %}
+        <p>Nenhum compromisso, tarefa ou prazo neste dia.</p>
+        <a class="botao botao--secundario" href="{% url 'agenda:novo' %}">+ Novo compromisso</a>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

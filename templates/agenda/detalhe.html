@@ -25,7 +25,7 @@
         <button type="submit" name="situacao" value="pendente" class="botao botao--secundario">Reabrir</button>
       {% endif %}
     </form>
-    <a class="botao botao--secundario" href="{% url 'agenda:lista' %}">Voltar</a>
+    <a class="botao botao--secundario" href="{% url 'agenda:calendario' %}?visao=mes&amp;data={{ compromisso.inicio|date:'Y-m-d' }}">Voltar ao calendário</a>
   </div>
 </div>
 

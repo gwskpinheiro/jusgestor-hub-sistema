@@ -11,6 +11,8 @@
   <a class="botao botao--primario" href="{% url 'agenda:novo' %}">+ Novo compromisso</a>
 </div>
 
+{% include "agenda/_visoes.html" with ativa="lista" %}
+
 {% if total_destacados %}
   <p class="aviso aviso--warning">{{ total_destacados }} pendência{{ total_destacados|pluralize:"s" }} vencida{{ total_destacados|pluralize:"s" }} ou para as próximas 24 horas.</p>
 {% endif %}

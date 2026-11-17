@@ -1,0 +1,6 @@
+{% load interface %}<nav class="abas" aria-label="Visualização da agenda">
+  {% for item in visoes %}
+    <a class="abas__item{% if item.visao == ativa %} abas__item--ativa{% endif %}" href="{{ item.url }}"{% if item.visao == ativa %} aria-current="page"{% endif %}>{{ item.rotulo }}</a>
+  {% endfor %}
+  <a class="abas__item{% if ativa == 'lista' %} abas__item--ativa{% endif %}" href="{% url 'agenda:lista' %}"{% if ativa == 'lista' %} aria-current="page"{% endif %}>{% icone "lista" %}<span>Lista</span></a>
+</nav>
