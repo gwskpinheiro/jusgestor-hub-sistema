@@ -27,6 +27,9 @@ def painel(request):
         "ultimos_processos": processos.filter(arquivado=False).select_related("cliente").order_by("-criado_em")[:5],
         "destacados": destacados,
         "atualizado_em": timezone.localtime(agora),
+        "hoje": hoje,
+        # Atalho de cadastro só para quem pode cadastrar processos (ADM e ADV).
+        "pode_cadastrar_processo": usuario.perfil in (Perfil.ADM, Perfil.ADV),
     }
     if usuario.perfil in (Perfil.ADM, Perfil.ADV):
         # ADM: horas da equipe no mês; ADV: apenas as próprias (RN05).

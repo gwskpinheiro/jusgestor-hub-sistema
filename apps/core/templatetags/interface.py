@@ -35,6 +35,7 @@ _ICONES = {
     "anterior": '<path d="m15 18-6-6 6-6"/>',
     "proximo": '<path d="m9 18 6-6-6-6"/>',
     "lista": '<path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+    "seta": '<path d="M5 12h14M13 6l6 6-6 6"/>',
 }
 
 

@@ -512,6 +512,10 @@ html[data-tema="escuro"] .botao-tema__lua { display: none; }
 }
 .botao-tema--flutuante:hover { border-color: var(--cor-borda-campo); }
 
+.icone--pequeno { width: 14px; height: 14px; }
+.link-acao { display: inline-flex; align-items: center; gap: .3rem; font-size: .88rem; font-weight: 600; text-decoration: none; }
+.link-acao:hover { text-decoration: underline; }
+
 /* =====================================================================
    Tipos de compromisso (Prazo, Tarefa, Compromisso): cor + ícone + texto
    ===================================================================== */
@@ -693,8 +697,44 @@ html[data-tema="escuro"] .botao-tema__lua { display: none; }
 .estado-vazio { text-align: center; padding: 2rem 1rem; color: var(--cor-texto-suave); }
 .estado-vazio__icone { width: 36px; height: 36px; color: var(--cor-borda-campo); }
 .estado-vazio p { margin: .5rem 0 1rem; }
+.estado-vazio--compacto { padding: 1.25rem .5rem .75rem; }
 
-/* Agenda em telas médias e estreitas */
+/* =====================================================================
+   Painel (dashboard)
+   ===================================================================== */
+.indicadores {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 1rem; margin-bottom: 1.25rem;
+}
+.indicador {
+  display: flex; align-items: flex-start; gap: .9rem; padding: 1.1rem 1.2rem;
+  background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: var(--raio);
+  box-shadow: var(--sombra-cartao); color: var(--cor-texto); text-decoration: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.indicador:hover { border-color: var(--cor-borda-campo); }
+.indicador:hover .indicador__acao { text-decoration: underline; }
+.indicador__icone {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 10px; background: var(--cor-info-fundo); color: var(--cor-info-texto);
+}
+.indicador__icone .icone { width: 22px; height: 22px; }
+.indicador--agenda .indicador__icone { background: var(--tipo-compromisso-fundo); color: var(--tipo-compromisso-texto); }
+.indicador--horas .indicador__icone { background: var(--cor-alerta-fundo); color: var(--cor-alerta-texto); }
+.indicador--financeiro .indicador__icone { background: var(--cor-neutro-fundo); color: var(--cor-neutro-texto); }
+.indicador__texto { display: flex; flex-direction: column; min-width: 0; }
+.indicador__rotulo { color: var(--cor-texto-rotulo); font-size: .82rem; font-weight: 600; }
+.indicador__valor { font-size: 1.6rem; line-height: 1.2; margin: .15rem 0 .3rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.indicador__acao { color: var(--cor-link); font-size: .8rem; font-weight: 600; }
+.grade-painel { gap: 1.25rem; margin-bottom: 1.25rem; }
+.grade-painel .cartao { margin-top: 0; }
+.cartao-painel .lista-simples li > span:first-child { min-width: 0; }
+.cartao-painel .lista-simples a { font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+.cartao-painel .lista-simples a:hover { text-decoration: underline; }
+.cartao-painel .lista-simples small .tipo { margin-right: .25rem; }
+.cartao-painel .lista-simples li > .selo { align-self: center; }
+
+/* Agenda e painel em telas médias e estreitas */
 @media (max-width: 900px) {
   .calendario-semana { display: none; }
   .semana-lista { display: grid; gap: .75rem; }
@@ -738,6 +778,11 @@ html[data-tema="escuro"] .botao-tema__lua { display: none; }
   .calendario-titulo { flex-basis: 100%; order: -1; font-size: 1.1rem; }
   .calendario-barra { gap: .6rem; }
   .botao-tema--flutuante { top: .5rem; right: .5rem; }
+  .indicador__valor { font-size: 1.4rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicador { transition: none; }
 }
 
 @media print {

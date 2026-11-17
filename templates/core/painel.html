@@ -1,5 +1,5 @@
 {% extends "core/layout.html" %}
-{% load formatos %}
+{% load formatos interface %}
 
 {% block titulo %}Painel{% endblock %}
 
@@ -9,23 +9,56 @@
     <h1>Painel</h1>
     <p class="subtitulo">Visão geral do escritório · Olá, {{ user.nome }} ({{ user.get_perfil_display }})</p>
   </div>
+  <div class="acoes">
+    <a class="botao botao--secundario" href="{% url 'agenda:calendario' %}">{% icone "agenda" %}<span>Abrir agenda</span></a>
+  </div>
 </div>
 
-<div class="cartoes">
-  <div class="cartao-resumo"><small>Processos ativos</small><strong>{{ total_processos }}</strong></div>
-  <div class="cartao-resumo"><small>Compromissos hoje</small><strong>{{ compromissos_hoje }}</strong></div>
+<div class="indicadores">
+  <a class="indicador indicador--processos" href="{% url 'processos:lista' %}">
+    <span class="indicador__icone">{% icone "processos" %}</span>
+    <span class="indicador__texto">
+      <small class="indicador__rotulo">Processos ativos</small>
+      <strong class="indicador__valor">{{ total_processos }}</strong>
+      <span class="indicador__acao">Ver processos</span>
+    </span>
+  </a>
+  <a class="indicador indicador--agenda" href="{% url 'agenda:calendario' %}?visao=dia&amp;data={{ hoje|date:'Y-m-d' }}">
+    <span class="indicador__icone">{% icone "agenda" %}</span>
+    <span class="indicador__texto">
+      <small class="indicador__rotulo">Compromissos hoje</small>
+      <strong class="indicador__valor">{{ compromissos_hoje }}</strong>
+      <span class="indicador__acao">Ver o dia na agenda</span>
+    </span>
+  </a>
   {% if mostra_horas %}
-    <div class="cartao-resumo"><small>{{ rotulo_horas }}</small><strong>{{ minutos_mes|duracao }}</strong></div>
+    <a class="indicador indicador--horas" href="{% url 'horas:lista' %}">
+      <span class="indicador__icone">{% icone "horas" %}</span>
+      <span class="indicador__texto">
+        <small class="indicador__rotulo">{{ rotulo_horas }}</small>
+        <strong class="indicador__valor">{{ minutos_mes|duracao }}</strong>
+        <span class="indicador__acao">Ver horas</span>
+      </span>
+    </a>
   {% endif %}
   {% if mostra_saldo %}
-    <div class="cartao-resumo"><small>Saldo financeiro (quitados)</small>
-      <strong class="{% if saldo < 0 %}valor-negativo{% else %}valor-positivo{% endif %}">{{ saldo|moeda }}</strong></div>
+    <a class="indicador indicador--financeiro" href="{% url 'financeiro:lista' %}">
+      <span class="indicador__icone">{% icone "financeiro" %}</span>
+      <span class="indicador__texto">
+        <small class="indicador__rotulo">Saldo financeiro (quitados)</small>
+        <strong class="indicador__valor {% if saldo < 0 %}valor-negativo{% else %}valor-positivo{% endif %}">{{ saldo|moeda }}</strong>
+        <span class="indicador__acao">Ver financeiro</span>
+      </span>
+    </a>
   {% endif %}
 </div>
 
-<div class="grade-2">
-  <section class="cartao">
-    <div class="cartao-cabecalho"><h2>Últimos processos</h2><a href="{% url 'processos:lista' %}">Ver todos</a></div>
+<div class="grade-2 grade-painel">
+  <section class="cartao cartao-painel">
+    <div class="cartao-cabecalho">
+      <h2>Últimos processos</h2>
+      <a class="link-acao" href="{% url 'processos:lista' %}">Ver todos {% icone "seta" "icone icone--pequeno" %}</a>
+    </div>
     {% if ultimos_processos %}
       <ul class="lista-simples">
         {% for p in ultimos_processos %}
@@ -36,23 +69,34 @@
         {% endfor %}
       </ul>
     {% else %}
-      <p class="texto-suave">Nenhum processo disponível para você.</p>
+      <div class="estado-vazio estado-vazio--compacto">
+        {% icone "processos" "icone estado-vazio__icone" %}
+        <p>Nenhum processo disponível para você.</p>
+        {% if pode_cadastrar_processo %}<a class="botao botao--secundario botao--pequeno" href="{% url 'processos:novo' %}">+ Novo processo</a>{% endif %}
+      </div>
     {% endif %}
   </section>
 
-  <section class="cartao">
-    <div class="cartao-cabecalho"><h2>Pendências vencidas e das próximas 24 horas</h2><a href="{% url 'agenda:lista' %}">Agenda</a></div>
+  <section class="cartao cartao-painel">
+    <div class="cartao-cabecalho">
+      <h2>Pendências vencidas e das próximas 24 horas</h2>
+      <a class="link-acao" href="{% url 'agenda:calendario' %}">Agenda {% icone "seta" "icone icone--pequeno" %}</a>
+    </div>
     {% if destacados %}
       <ul class="lista-simples">
         {% for c in destacados %}
           <li>
-            <span><a href="{{ c.get_absolute_url }}">{{ c.titulo }}</a><small>{{ c.get_tipo_display }} · {{ c.inicio|date:"d/m/Y H:i" }}</small></span>
+            <span><a href="{{ c.get_absolute_url }}">{{ c.titulo }}</a><small>{% include "agenda/_tipo.html" with tipo=c.tipo rotulo=c.get_tipo_display %} {{ c.inicio|date:"d/m/Y H:i" }}</small></span>
             <span class="selo selo--{{ c.destaque_atual }}">{% if c.destaque_atual == "vencido" %}Vencido{% else %}Próximo{% endif %}</span>
           </li>
         {% endfor %}
       </ul>
     {% else %}
-      <p class="texto-suave">Nenhuma pendência vencida ou para as próximas 24 horas.</p>
+      <div class="estado-vazio estado-vazio--compacto">
+        {% icone "agenda" "icone estado-vazio__icone" %}
+        <p>Nenhuma pendência vencida ou para as próximas 24 horas.</p>
+        <a class="botao botao--secundario botao--pequeno" href="{% url 'agenda:novo' %}">+ Novo compromisso</a>
+      </div>
     {% endif %}
   </section>
 </div>

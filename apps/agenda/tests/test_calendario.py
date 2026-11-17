@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from apps.agenda import calendario as cal
 from apps.core.tests import fabrica as f
+from apps.usuarios.models import Perfil
 
 
 def local(ano, mes, dia, hora=9, minuto=0):
@@ -257,3 +258,45 @@ class CalendarioTests(f.Cenario):
         resposta = self.client.get(reverse("core:painel"))
         self.assertContains(resposta, f'href="{self.url}"')
 
+
+class PainelTests(f.Cenario):
+    def test_indicadores_levam_aos_modulos(self):
+        self.entrar(self.adm)
+        resposta = self.client.get(reverse("core:painel"))
+        hoje = timezone.localdate().isoformat()
+        for href in (reverse("processos:lista"), f"{reverse('agenda:calendario')}?visao=dia&amp;data={hoje}",
+                     reverse("horas:lista"), reverse("financeiro:lista")):
+            self.assertContains(resposta, f'href="{href}"')
+
+    def test_advogado_nao_ve_atalho_do_financeiro(self):
+        self.entrar(self.adv)
+        resposta = self.client.get(reverse("core:painel"))
+        self.assertNotContains(resposta, f'href="{reverse("financeiro:lista")}"')
+        self.assertContains(resposta, f'href="{reverse("horas:lista")}"')
+
+    def test_estado_vazio_sem_atalho_indevido(self):
+        self.entrar(self.ast)   # sem acessos: nenhum processo nem pendência
+        resposta = self.client.get(reverse("core:painel"))
+        self.assertContains(resposta, "Nenhum processo disponível para você.")
+        self.assertContains(resposta, "Nenhuma pendência vencida ou para as próximas 24 horas.")
+        self.assertNotContains(resposta, f'href="{reverse("processos:novo")}"')   # AST não cadastra processos
+        self.assertNotContains(resposta, f'href="{reverse("horas:lista")}"')
+        novo_adv = f.usuario(Perfil.ADV)
+        self.entrar(novo_adv)
+        self.assertContains(self.client.get(reverse("core:painel")), f'href="{reverse("processos:novo")}"')
+
+    def test_ultimos_processos_continua_resumido(self):
+        for n in range(7):
+            f.processo(self.cli, self.adv, titulo=f"Processo resumo fictício {n}")
+        self.entrar(self.adm)
+        resposta = self.client.get(reverse("core:painel"))
+        self.assertEqual(len(resposta.context["ultimos_processos"]), 5)
+        self.assertContains(resposta, "Ver todos")
+
+    def test_pendencias_mostram_o_tipo(self):
+        f.compromisso(self.adv, self.proc, titulo="Prazo vencido fictício", tipo="prazo",
+                      inicio=timezone.now() - timedelta(hours=2))
+        self.entrar(self.adv)
+        resposta = self.client.get(reverse("core:painel"))
+        self.assertContains(resposta, 'class="tipo tipo--prazo"')
+        self.assertContains(resposta, "Vencido")
